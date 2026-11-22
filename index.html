@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Registro de Turnos 💕</title>
+<meta name="description" content="App tierna y práctica para registrar turnos. Datos locales, listos para Firebase.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js",
+    "firebase/analytics": "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js",
+    "jspdf": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --pink:#ff6b9d; --pink-soft:#ffc2d9; --pink-bg:#fff0f6;
+  --purple:#a78bfa; --purple-soft:#ddd6fe; --purple-bg:#f5f3ff;
+  --mint:#6ee7b7; --mint-bg:#ecfdf5;
+  --peach:#fdba74; --peach-bg:#fff7ed;
+  --text:#3b2f4a; --muted:#7c6f8a; --border:#f1e4f3;
+  --card:#ffffff; --shadow:0 10px 30px rgba(167,139,250,.18);
+  --radius:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Quicksand','Nunito',system-ui,-apple-system,sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  background:linear-gradient(135deg,#fff0f6 0%,#f5f3ff 50%,#ecfdf5 100%);
+  overflow-x:hidden;
+}
+.bg-hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-hearts span{position:absolute;bottom:-40px;font-size:22px;opacity:.18;animation:floatUp linear infinite}
+@keyframes floatUp{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:.18}100%{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:16px 16px 100px}
+header.hero{
+  text-align:center;padding:24px 16px 8px;
+}
+header.hero h1{
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:clamp(26px,6vw,38px);
+  margin:0;background:linear-gradient(90deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+header.hero p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.hero-emoji{font-size:42px;display:block;margin-bottom:4px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+.tabs{
+  display:flex;gap:8px;justify-content:center;margin:14px 0 18px;flex-wrap:wrap;
+}
+.tab{
+  border:none;cursor:pointer;padding:10px 18px;border-radius:999px;font-weight:700;
+  font-family:inherit;font-size:14px;background:rgba(255,255,255,.7);color:var(--muted);
+  box-shadow:0 4px 12px rgba(0,0,0,.05);transition:all .2s;
+}
+.tab.active{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;transform:translateY(-2px);box-shadow:0 8px 18px rgba(255,107,157,.35)}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+  background:var(--card);border-radius:var(--radius);padding:20px;
+  box-shadow:var(--shadow);margin-bottom:16px;border:1px solid var(--border);
+}
+.card h2{margin:0 0 12px;font-size:18px;font-family:'Nunito',sans-serif;font-weight:700;display:flex;align-items:center;gap:8px}
+.card h3{margin:14px 0 6px;font-size:15px;font-weight:700}
+
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 6px}
+input[type="text"],input[type="date"],input[type="time"],input[type="number"],textarea,select{
+  width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:14px;
+  font-family:inherit;font-size:16px;background:#faf7fb;color:var(--text);
+  transition:border .2s,box-shadow .2s;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 4px rgba(167,139,250,.15)}
+textarea{min-height:80px;resize:vertical}
+
+.radio-group{display:flex;gap:10px;flex-wrap:wrap}
+.radio-card{flex:1;min-width:100px;position:relative}
+.radio-card input{position:absolute;opacity:0}
+.radio-card label{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 10px;border:2px solid var(--border);border-radius:16px;
+  cursor:pointer;background:#fff;font-weight:700;margin:0;transition:all .2s;text-align:center;
+}
+.radio-card input:checked + label{border-color:var(--pink);background:linear-gradient(135deg,#fff0f6,#f5f3ff);box-shadow:0 6px 14px rgba(255,107,157,.2);transform:translateY(-2px)}
+.radio-card .rc-emoji{font-size:26px;margin-bottom:4px}
+
+.checkbox-row{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+.checkbox-pill{position:relative}
+.checkbox-pill input{position:absolute;opacity:0}
+.checkbox-pill label{
+  display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:2px solid var(--border);
+  border-radius:999px;cursor:pointer;font-weight:600;margin:0;background:#fff;transition:all .2s;font-size:14px;
+}
+.checkbox-pill input:checked + label{border-color:var(--mint);background:var(--mint-bg);color:#065f46}
+#reglasDias select{font-size:13px;padding:8px 10px}
+.sep-derecho{border-right:3px solid var(--purple);padding-right:8px;margin-right:6px}
+.sep-derecho select{width:100%}
+
+.btn{
+  border:none;cursor:pointer;padding:13px 20px;border-radius:999px;font-weight:700;
+  font-family:inherit;font-size:15px;transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+  justify-content:center;
+}
+.btn-primary{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;box-shadow:0 8px 18px rgba(255,107,157,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 22px rgba(255,107,157,.45)}
+.btn-soft{background:#fff;color:var(--text);border:2px solid var(--border)}
+.btn-soft:hover{border-color:var(--purple)}
+.btn-danger{background:#fee2e2;color:#b91c1c}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn-block{width:100%}
+.hidden{display:none!important}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;padding:12px 22px;
+  border-radius:999px;font-weight:700;box-shadow:0 10px 24px rgba(0,0,0,.2);
+  opacity:0;transition:all .3s;z-index:999;pointer-events:none;font-size:14px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.record-card{
+  background:#fff;border-radius:18px;padding:14px 16px;margin-bottom:12px;
+  border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,.05);
+  display:flex;flex-direction:column;gap:6px;
+}
+.record-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.record-date{font-weight:800;font-size:16px}
+.badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.badge-normal{background:var(--mint-bg);color:#065f46}
+.badge-extra{background:var(--peach-bg);color:#9a3412}
+.badge-especial{background:var(--purple-bg);color:#5b21b6}
+.record-meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+.record-obs{font-size:14px;margin-top:4px}
+.record-actions{display:flex;gap:8px;margin-top:8px}
+.tipo-hint{
+  margin-top:8px;padding:10px 12px;border-radius:12px;
+  background:linear-gradient(135deg,var(--purple-bg),var(--pink-bg));
+  border:1px dashed var(--purple-soft);font-size:13px;font-weight:700;color:#5b21b6;
+}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:linear-gradient(135deg,#fff,#f5f3ff);border-radius:16px;padding:12px;text-align:center;border:1px solid var(--border)}
+.stat .n{font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--pink),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat .l{font-size:12px;color:var(--muted);font-weight:600}
+
+.empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:15px}
+
+.file-status{font-size:13px;color:var(--muted);margin:8px 0;padding:10px;border-radius:12px;background:#faf7fb;border:1px dashed var(--border)}
+.confetti-heart{position:fixed;pointer-events:none;font-size:24px;z-index:1000;animation:confettiFall 1.4s ease-out forwards}
+@keyframes confettiFall{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(720deg);opacity:0}}
+
+@media (max-width:480px){
+  .wrap{padding:12px 12px 90px}
+  .radio-group{gap:8px}
+  .radio-card{min-width:90px}
+}
+
+/* ---------- Spinner de carga ---------- */
+#cargaSpinner{
+  position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,0.75);display:flex;
+  align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(2px);
+}
+#cargaSpinner .anillo{
+  width:48px;height:48px;border:5px solid #f1e4f3;border-top:5px solid var(--purple);
+  border-radius:50%;animation:spinner 1s linear infinite;
+}
+#cargaSpinner .texto{
+  font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);font-size:15px;
+  letter-spacing:.5px;
+}
+@keyframes spinner{to{transform:rotate(360deg)}}
+
+/* ---------- Toast pequeño ---------- */
+</style>
+</head>
+<body>
+<div id="cargaSpinner" style="display:none">
+  <div class="anillo"></div>
+  <div class="texto">Cargando…</div>
+</div>
+<div class="bg-hearts" id="bgHearts" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="hero">
+    <span class="hero-emoji">💖</span>
+    <h1>Registro de Turnos</h1>
+    <p>Registra turnos, horas extras y días especiales · todo en un solo lugar</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="resumen">📊 Resumen</button>
+    <button class="tab" data-tab="registro">📋 Registro</button>
+    <button class="tab" data-tab="ajustes">⚙️ Ajustes</button>
+  </nav>
+
+  <!-- RESUMEN -->
+  <section class="panel active" id="panel-resumen">
+    <div class="card">
+      <h2>💵 Liquidación del mes</h2>
+      <div id="liquidacionMes"></div>
+    </div>
+    <div class="card">
+      <h2>📅 Resumen mensual</h2>
+      <div id="monthlySummary"></div>
+    </div>
+  </section>
+
+  <!-- REGISTRO -->
+  <section class="panel" id="panel-registro">
+    <div class="card">
+      <h2 id="formTitle">✨ Nuevo registro</h2>
+      <form id="formTurno">
+        <label>Fecha del turno *</label>
+        <input type="date" id="fecha" required>
+        <div id="tipoDiaHint" class="tipo-hint" style="display:none"></div>
+
+        <label>Tipo de día *</label>
+        <div class="radio-group">
+          <div class="radio-card"><input type="radio" name="tipoDia" id="td-normal" value="NORMAL"><label for="td-normal"><span class="rc-emoji">🌿</span>NORMAL</label></div>
+          <div class="radio-card"><input type="radio" name="tipoDia" id="td-extra" value="EXTRA"><label for="td-extra"><span class="rc-emoji">⭐</span>EXTRA</label></div>
+          <div class="radio-card"><input type="radio" name="tipoDia" id="td-especial" value="ESPECIAL"><label for="td-especial"><span class="rc-emoji">👑</span>ESPECIAL</label></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label>🚪 Hora de entrada</label>
+            <input type="time" id="horaEntrada">
+          </div>
+          <div>
+            <label>🏁 Hora de salida</label>
+            <input type="time" id="horaSalida">
+          </div>
+        </div>
+
+        <div id="recargoEspecialWrap" style="display:none;margin-top:8px">
+          <label>Recargo día especial (%)</label>
+          <input type="number" id="recargoEspecial" step="1" placeholder="100">
+        </div>
+        <div style="margin-top:8px">
+          <label>Inicio horas extras</label>
+          <select id="inicioHE">
+            <option value="17:00">17:00 (turno día)</option>
+            <option value="21:00">21:00 (turno tarde)</option>
+          </select>
+        </div>
+
+        <div style="margin-top:8px">
+          <label>Observaciones</label>
+          <textarea id="observaciones" placeholder="Escribe aquí cualquier detalle..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+          <button type="submit" class="btn btn-primary" id="btnGuardar" style="flex:1;min-width:120px">Guardar 💖</button>
+          <button type="button" class="btn btn-soft" id="btnCancelar" style="display:none">Cancelar</button>
+          <button type="button" class="btn btn-soft" id="btnEditarParametros" style="display:none">⚙️ Parámetros de este turno</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Parámetros específicos de este registro (editable) -->
+    <div id="parametrosRegistroWrap" style="display:none;margin-top:16px;border:1px dashed var(--border);border-radius:16px;padding:16px;background:#faf7fb">
+      <h3 style="margin:0 0 12px;font-size:15px">⚙️ Parámetros de este turno</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Edita los parámetros de liquidación solo para este registro. Si no los editas, se usarán los parámetros globales de ⚙️ Ajustes.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div><label style="font-size:12px">Sueldo base/hora ($)</label><input type="number" id="prSueldoBase" step="1" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+        <div><label style="font-size:12px">Recargo HE (%)</label><input type="number" id="prRecargo" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+        <div><label style="font-size:12px">Valor HE ($)</label><span id="prValorHE" style="display:block;width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#faf7fb;color:var(--muted);font-weight:600">$0</span></div>
+        <div><label style="font-size:12px">Gratificación (%)</label><input type="number" id="prGrat" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+        <div><label style="font-size:12px">AFP (%)</label><input type="number" id="prAfp" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+        <div><label style="font-size:12px">Salud (%)</label><input type="number" id="prSalud" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+        <div><label style="font-size:12px">Cesantía (%)</label><input type="number" id="prCesantia" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:10px;background:#fff"></div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+        <button type="button" class="btn btn-soft btn-sm" id="prUsarGlobales">Usar parámetros globales</button>
+        <button type="button" class="btn btn-soft btn-sm" id="prCancelarParametros">Cancelar parámetros</button>
+        <button type="button" class="btn btn-primary btn-sm" id="prActualizar">Actualizar parámetros</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>📋 Registro</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input type="text" id="filtroTexto" placeholder="🔍 Buscar..." style="flex:1;min-width:140px">
+        <select id="filtroTipo" style="width:auto">
+          <option value="">Todos</option>
+          <option value="NORMAL">NORMAL</option>
+          <option value="EXTRA">EXTRA</option>
+          <option value="ESPECIAL">ESPECIAL</option>
+        </select>
+        <select id="filtroMes" style="width:auto">
+          <option value="">Todos los meses</option>
+        </select>
+      </div>
+      <div id="listaRegistros"></div>
+    </div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section class="panel" id="panel-ajustes">
+    <div class="card">
+      <h2>⚙️ Ajustes de liquidación</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Configura estos valores antes de usar la app. Son necesarios para calcular horas y costos mensuales.</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Valores usados para calcular horas y costos mensuales.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Sueldo base por hora ($)</label><input type="number" id="pSueldoBase" step="1"></div>
+        <div><label>Recargo hora extra (%)</label><input type="number" id="pRecargo" step="0.01"></div>
+        <div><label>Valor hora extra ($) (calculado)</label><span id="pValorHE" style="display:block;width:100%;padding:8px 14px;border:2px solid var(--border);border-radius:14px;background:#faf7fb;color:var(--muted);font-weight:600">$0</span></div>
+        <div><label>Gratificación (%)</label><input type="number" id="pGrat" step="0.01"></div>
+        <div><label>AFP (%)</label><input type="number" id="pAfp" step="0.01"></div>
+        <div><label>Salud (%)</label><input type="number" id="pSalud" step="0.01"></div>
+        <div><label>Seguro cesantía (%)</label><input type="number" id="pCesantia" step="0.01"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btnSaveParams" style="margin-top:12px">💾 Guardar parámetros</button>
+    </div>
+
+    <div class="card">
+      <h2>📋 Datos para PDF (RRHH)</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 10px">Estos datos aparecen en el encabezado del PDF generado para RRHH.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Empresa</label><input type="text" id="pdfEmpresa" placeholder="Nombre de la empresa"></div>
+        <div><label>RUT empresa</label><input type="text" id="pdfRutEmpresa" placeholder="76.831.766-6"></div>
+        <div><label>Dirección empresa</label><input type="text" id="pdfDireccion" placeholder="Dirección completa"></div>
+        <div><label>Trabajador</label><input type="text" id="pdfTrabajador" placeholder="Nombre del trabajador"></div>
+        <div><label>RUT trabajador</label><input type="text" id="pdfRutTrabajador" placeholder="12.345.678-K"></div>
+        <div><label>Cargo</label><input type="text" id="pdfCargo" placeholder="Cargo del trabajador"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btnSavePdfData" style="margin-top:12px">💾 Guardar datos PDF</button>
+    </div>
+
+    <div class="card">
+      <h2>🗓️ Reglas de clasificación de días</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 10px">
+        Configura qué significa cada día de la semana para ti: NORMAL, EXTRA o ESPECIAL.
+        Estas reglas son obligatorias: sin ellas no se pueden crear turnos.
+        Al elegir una fecha, el tipo de día se completa solo con estas reglas.
+      </p>
+      <div id="reglasDias" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"></div>
+
+      <h3 style="margin-top:18px">📡 Feriados de Chile</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 8px">
+        Fuente: api.boostr.cl (Diario Oficial de Chile). Se guardan para usarse sin internet.
+      </p>
+      <p id="feriadosStatus" style="font-size:13px;font-weight:600;margin:0 0 10px">📡 Cargando…</p>
+      <button class="btn btn-soft btn-sm" id="btnActualizarFeriados">🔄 Actualizar feriados ahora</button>
+      <button class="btn btn-primary btn-sm" id="btnSaveReglas" style="margin-left:8px">💾 Guardar reglas de días</button>
+    </div>
+
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- DB ----------
+const DB_KEY='turnosDB_v1';
+let db={schemaVersion:1,registros:{},parametros:null,parametrosPorMes:{},bonificaciones:{},empresa:{},trabajador:{},feriados:null};
+let editingId=null;
+let tipoDiaManual=false;
+let suppressTipoDiaChange=false;
+let _feriadosActualizando=false;
+
+// ---------- formateo de horas HH:MM ----------
+const hrs=n=>{const m=Math.round(n);const h=Math.floor(m/60);const mm=m%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');};
+
+function loadLocal(){ /* sin almacenamiento local: la fuente de verdad es Firebase */ }
+function persistLocal(){ /* sin almacenamiento local */ }
+
+// ---------- helpers ----------
+function saveDB(){
+  if(fbReady()){
+    uploadFirebaseSilent();
+  }
+}
+
+async function uploadFirebaseSilent(){
+  const ok=await waitForFb(8000);
+  if(!ok) return;
+  try{
+    await window.FB_AUTH_PROMISE;
+    const _t=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout 15s')),15000));
+    await Promise.race([window.FB_HELPERS.uploadAll(db.registros, db.parametros, db.bonificaciones, db.empresa, db.trabajador, db.feriados), _t]);
+  }catch(e){
+    console.error(e);
+  }
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function mostrarCarga(){document.getElementById('cargaSpinner').style.display='flex';}
+function ocultarCarga(){document.getElementById('cargaSpinner').style.display='none';}
+function confetti(){
+  const emojis=['💖','💕','✨','🌸','💗','🥰'];
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');el.className='confetti-heart';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left=(Math.random()*100)+'vw';el.style.top=(Math.random()*30+30)+'vh';
+    el.style.setProperty('--dx',(Math.random()*200-100)+'px');
+    el.style.setProperty('--dy',(Math.random()*200+100)+'px');
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1500);
+  }
+}
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+}
+
+// ---------- conditional form ----------
+function updateConditional(){
+  const tipo=document.querySelector('input[name="tipoDia"]:checked')?.value;
+  const wrap=document.getElementById('recargoEspecialWrap');
+  if(wrap) wrap.style.display = (tipo==='ESPECIAL') ? 'block' : 'none';
+}
+function setTipoDia(tipo, manual){
+  suppressTipoDiaChange=true;
+  const radio=document.querySelector(`input[name="tipoDia"][value="${tipo}"]`);
+  if(radio) radio.checked=true;
+  tipoDiaManual=!!manual;
+  updateConditional();
+  setTimeout(()=>{suppressTipoDiaChange=false;},0);
+}
+function updateTipoDiaHint(fecha){
+  const el=document.getElementById('tipoDiaHint');
+  if(!el) return;
+  const txt=tipoDiaExplicacion(fecha);
+  el.textContent=txt;
+  el.style.display=txt?'block':'none';
+}
+function autoHE(){
+  const ent=document.getElementById('horaEntrada').value;
+  const fecha=document.getElementById('fecha').value;
+  const sel=document.getElementById('inicioHE');
+  if(!sel) return;
+  sel.value=defaultHE(fecha, ent, null);
+}
+function prefillFromFecha(){
+  const fecha=document.getElementById('fecha').value;
+  if(!fecha) return;
+  updateTipoDiaHint(fecha);
+  const existing=Object.entries(db.registros).find(([id,r])=>r.fechaTurno===fecha);
+  if(existing){
+    const [id,r]=existing;
+    editingId=id;
+    setTipoDia(r.tipoDia || autoTipoDia(fecha), r.tipoDiaManual);
+    document.getElementById('observaciones').value=r.observaciones||'';
+    document.getElementById('horaEntrada').value=r.horaEntrada||'';
+    document.getElementById('horaSalida').value=r.horaSalida||'';
+    const recEsp = r.recargoEspecial!=null ? r.recargoEspecial : (r.recargoPorHoraExtra!=null ? parseFloat(String(r.recargoPorHoraExtra)) : 100);
+    document.getElementById('recargoEspecial').value = isNaN(recEsp)?100:recEsp;
+    const he = defaultHE(fecha, r.horaEntrada, r.inicioHorasExtras);
+    document.getElementById('inicioHE').value = he;
+    updateConditional();
+    document.getElementById('formTitle').textContent='✏️ Editar registro';
+    document.getElementById('btnGuardar').textContent='Actualizar 💕';
+    document.getElementById('btnCancelar').style.display='inline-flex';
+    document.getElementById('btnEditarParametros').style.display='inline-flex';
+  } else {
+    if(editingId){
+      // se está moviendo un registro existente a una fecha nueva
+      setTipoDia(autoTipoDia(fecha), false);
+      document.getElementById('formTitle').textContent='✏️ Editar registro';
+      document.getElementById('btnGuardar').textContent='Actualizar 💕';
+      document.getElementById('btnCancelar').style.display='inline-flex';
+      document.getElementById('btnEditarParametros').style.display='inline-flex';
+    } else {
+      document.getElementById('horaEntrada').value='';
+      document.getElementById('horaSalida').value='';
+      document.getElementById('observaciones').value='';
+      document.getElementById('recargoEspecial').value='100';
+      setTipoDia(autoTipoDia(fecha), false);
+      document.getElementById('formTitle').textContent='✨ Nuevo registro';
+      document.getElementById('btnGuardar').textContent='Guardar 💖';
+      document.getElementById('btnCancelar').style.display='none';
+      document.getElementById('btnEditarParametros').style.display='none';
+    }
+    // sin recargo adicional
+    updateConditional();
+  }
+}
+function resetForm(){
+  editingId=null;
+  document.getElementById('formTurno').reset();
+  const hoy=todayStr();
+  document.getElementById('fecha').value=hoy;
+  document.getElementById('horaEntrada').value=nowTimeStr();
+  document.getElementById('horaSalida').value='';
+  document.getElementById('recargoEspecial').value='100';
+  document.getElementById('inicioHE').value='17:00';
+  setTipoDia(autoTipoDia(hoy), false);
+  updateTipoDiaHint(hoy);
+  document.getElementById('formTitle').textContent='✨ Nuevo registro';
+  document.getElementById('btnGuardar').textContent='Guardar 💖';
+  document.getElementById('btnCancelar').style.display='none';
+  document.getElementById('btnEditarParametros').style.display='none';
+  updateConditional();
+}
+function todayStr(){const d=new Date();return d.toISOString().slice(0,10);}
+function nowTimeStr(){const d=new Date();const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');return h+':'+m;}
+// Inicio predeterminado de horas extras: 17:00 día / 21:00 tarde (turno tarde desde 01/06/2026)
+function defaultHE(fecha, horaEntrada, inicioHorasExtras){
+  if(inicioHorasExtras) return inicioHorasExtras;
+  const ent = horaEntrada || '';
+  const isTarde = fecha>='2026-06-01' && ent && ent>='11:00';
+  if(isTarde) return '21:00';
+  return '17:00';
+}
+
+// ---------- render ----------
+function badge(tipo){
+  const cls=tipo==='NORMAL'?'badge-normal':tipo==='EXTRA'?'badge-extra':'badge-especial';
+  const emoji=tipo==='NORMAL'?'🌿':tipo==='EXTRA'?'⭐':'👑';
+  return `<span class="badge ${cls}">${emoji} ${tipo}</span>`;
+}
+function formatDate(iso){ if(!iso) return ''; const [y,m,d]=String(iso).split('-'); if(!y||!m||!d) return iso; return `${d}/${m}/${y}`; }
+
+// ---------- período de liquidación chileno (21 mes anterior - 20 mes actual) ----------
+function periodKey(fecha){
+  if(!fecha) return '';
+  const [y,m,d] = fecha.split('-').map(Number);
+  const day=d;
+  const mes=m;
+  const año=y;
+  // Si día >= 21, pertenece al período del mes siguiente
+  if(day>=21){
+    const nm=mes===12?1:mes+1;
+    const ny=mes===12?año+1:año;
+    return `${ny}-${String(nm).padStart(2,'0')}`;
+  }
+  return `${año}-${String(mes).padStart(2,'0')}`;
+}
+function periodLabel(key){
+  if(!key) return '';
+  const [y,m]=key.split('-').map(Number);
+  const prevM=m===1?12:m-1;
+  const prevY=m===1?y-1:y;
+  return `${String(prevM).padStart(2,'0')}/${prevY} (21) - ${String(m).padStart(2,'0')}/${y} (20)`;
+}
+function monthKey(fecha){ if(!fecha) return ''; return fecha.slice(0,7); }
+function monthLabel(key){ if(!key) return ''; const [y,m]=key.split('-'); const n=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return `${n[m-1]} ${y}`; }
+
+// ---------- reglas de clasificación de días (editables en ⚙️ Datos) ----------
+// Cada día de la semana puede ser NORMAL, EXTRA o ESPECIAL: la app sirve para
+// cualquier persona, no solo para un calendario de un país.
+// Por defecto: fin de semana NORMAL, días hábiles EXTRA.
+const DIAS_SEMANA=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const TIPOS_DIA=['NORMAL','EXTRA','ESPECIAL'];
+const REGLAS_DEFAULT={0:'EXTRA',1:'EXTRA',2:'EXTRA',3:'EXTRA',4:'EXTRA',5:'NORMAL',6:'NORMAL'};
+// Reglas para feriados (Chile)
+const REGLA_FERIADO_IRR_DEFAULT='ESPECIAL';   // irrenunciables: siempre ESPECIAL por ley
+const REGLA_FERIADO_NO_IRR_DEFAULT='EXTRA';   // renunciables/legales: EXTRA por defecto
+const TIPOS_FERIADO=[['NORMAL','NORMAL'],['EXTRA','EXTRA'],['ESPECIAL','ESPECIAL']];
+function reglaFeriadoIrr(){
+  const r=db.parametros && db.parametros.reglaFeriadoIrr;
+  return TIPOS_FERIADO.some(t=>t[0]===r)?r:null;
+}
+function reglaFeriadoNoIrr(){
+  const r=db.parametros && db.parametros.reglaFeriadoNoIrr;
+  return TIPOS_FERIADO.some(t=>t[0]===r)?r:null;
+}
+function reglasDias(){
+  const r=(db.parametros && db.parametros.reglasDias)||{};
+  const out={};
+  for(let d=0;d<7;d++) out[d]=TIPOS_DIA.includes(r[d])?r[d]:null;
+  return out;
+}
+function diaSemana(fecha){
+  const [y,m,d] = fecha.split('-').map(Number);
+  // getUTCDay(): 0=domingo, 1=lunes, ..., 6=sábado
+  // Convertir a índice donde 0=lunes, ..., 5=sábado, 6=domingo (coincide con DIAS_SEMANA)
+  return (new Date(Date.UTC(y, m-1, d)).getUTCDay() + 6) % 7;
+}
+function emojiTipo(tipo){ return tipo==='NORMAL'?'🌿':tipo==='EXTRA'?'⭐':'👑'; }
+
+// ---------- feriados de Chile (API: api.boostr.cl, alimentada del Diario Oficial) ----------
+// Se consultan por año, se guardan en Firebase (config/feriados) y se usan como caché
+// para que la app también funcione sin internet. Gratis, sin API key.
+// Nodo guardado (mínimo): { fuente, actualizado, datos:{AAAA:{MM:{DD:{nombre,irrenunciable}}}} }
+const FERIADOS_API='https://api.boostr.cl/holidays/{anio}.json';
+const FERIADOS_CACHE_DIAS=7;
+function feriadosEsJerarquico(o){ return !!o && Object.keys(o).some(k=>/^\d{4}$/.test(k)); }
+function feriadoSet(datos,fecha,v){
+  const a=fecha.slice(0,4), m=fecha.slice(5,7), d=fecha.slice(8,10);
+  datos[a]=datos[a]||{}; datos[a][m]=datos[a][m]||{}; datos[a][m][d]=v;
+}
+function contarFeriados(datos){
+  return Object.values(datos||{}).reduce((s,meses)=>s+Object.values(meses||{}).reduce((s2,dias)=>s2+Object.keys(dias||{}).length,0),0);
+}
+function normalizarFeriadosGuardados(f){
+  // Acepta el formato vigente (/datos/AAAA/MM/DD) y cualquier formato viejo, y lo deja limpio
+  if(!f) return null;
+  const plano={};
+  if(feriadosEsJerarquico(f.datos)){
+    for(const [y,meses] of Object.entries(f.datos||{})){
+      for(const [m,dias] of Object.entries(meses||{})){
+        for(const [d,v] of Object.entries(dias||{})){ plano[`${y}-${m}-${d}`]=v; }
+      }
+    }
+  }else{
+    Object.assign(plano, f.datos||f.fechas||{});
+  }
+  const datos={};
+  for(const [k,v] of Object.entries(plano)){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+    feriadoSet(datos,k,{nombre:(v&&v.nombre)||'', irrenunciable:!!(v&&v.irrenunciable)});
+  }
+  return {fuente:f.fuente||'api.boostr.cl (Diario Oficial)', actualizado:f.actualizado||f.actualizadoEn||Date.now(), datos};
+}
+function feriadosGuardadosViejos(f){
+  if(!f || !f.datos) return true; // nodo inexistente o formato con "fechas"
+  return !feriadosEsJerarquico(f.datos) || f.anios!==undefined || f.actualizadoEn!==undefined;
+}
+function getFeriado(fecha){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha||'')) return null;
+  const a=(db.feriados&&db.feriados.datos&&db.feriados.datos[fecha.slice(0,4)])||{};
+  const m=a[fecha.slice(5,7)]||{};
+  return m[fecha.slice(8,10)]||null;
+}
+function aniosFeriadosNecesarios(){
+  // desde el año del turno más antiguo hasta el año siguiente al actual
+  let min=new Date().getFullYear();
+  Object.values(db.registros||{}).forEach(r=>{
+    const y=Number((r.fechaTurno||'').slice(0,4));
+    if(y && y<min) min=y;
+  });
+  const max=new Date().getFullYear()+1;
+  const out=[];
+  for(let y=min;y<=max;y++) out.push(y);
+  return out;
+}
+function feriadosCacheVigente(){
+  const f=db.feriados;
+  if(!f || !f.datos) return false;
+  const anios=new Set(Object.keys(f.datos||{}));
+  return aniosFeriadosNecesarios().every(y=>anios.has(String(y)));
+}
+function fetchConTimeout(url,ms){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms);
+  return fetch(url,{signal:ctrl.signal}).finally(()=>clearTimeout(t));
+}
+function dormir(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function estadoFeriados(){
+  const el=document.getElementById('feriadosStatus');
+  if(!el) return;
+  if(!db.feriados){
+    el.innerHTML='📡 Feriados de Chile: aún sin datos. Se buscarán automáticamente.';
+    el.style.color='var(--muted)';
+    return;
+  }
+  const n=contarFeriados(db.feriados.datos);
+  const f=new Date(db.feriados.actualizado).toLocaleDateString('es-CL');
+  el.innerHTML=`✅ Feriados de Chile: <b>${n}</b> fechas · fuente ${db.feriados.fuente||'API'} · guardados el ${f}`;
+  el.style.color='#065f46';
+}
+async function actualizarFeriados(forzar){
+  if(_feriadosActualizando) return {ok:false,error:'ya en curso'}; // evita consultas duplicadas
+  _feriadosActualizando=true;
+  try{
+const el=document.getElementById('feriadosStatus');
+  if(el){ el.innerHTML='📡 Consultando feriados de Chile…'; el.style.color='var(--purple);' }
+  const reciente=!forzar && !!db.feriados && Date.now()-db.feriados.actualizado<=FERIADOS_CACHE_DIAS*24*3600*1000;
+  const guardados=new Set(Object.keys((db.feriados&&db.feriados.datos)||{}));
+  const pendientes=(reciente?aniosFeriadosNecesarios().filter(y=>!guardados.has(String(y))):aniosFeriadosNecesarios());
+  if(pendientes.length===0){
+    estadoFeriados();
+    return {ok:true,n:contarFeriados((db.feriados&&db.feriados.datos)||{})};
+  }
+  const nuevo={
+    fuente:'api.boostr.cl (Diario Oficial)',
+    actualizado:Date.now(),
+    datos: reciente ? JSON.parse(JSON.stringify(db.feriados.datos||{})) : {}
+  };
+  let consultados=0, ultimoError=null;
+  for(const y of pendientes){
+    let exito=false;
+    for(let intento=1; intento<=3 && !exito; intento++){
+      try{
+        const r=await fetchConTimeout(FERIADOS_API.replace('{anio}',y), 12000);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const j=await r.json();
+        const lista=(j && j.data)||[];
+        lista.forEach(d=>{
+          if(!d || !d.date) return;
+          feriadoSet(nuevo.datos, d.date, {nombre:d.title||'', irrenunciable:!!d.inalienable});
+        });
+        exito=true; consultados++;
+      }catch(e){
+        ultimoError=e;
+        if(intento<3) await dormir(1000*intento); // reintento con espera (rate limit)
+      }
+    }
+    await dormir(1200); // pausa entre años para no gatillar el límite de la API
+  }
+  if(consultados>0){
+    // Comparar si los datos realmente cambiaron antes de escribir en Firebase
+    const prev=db.feriados&&db.feriados.datos?JSON.stringify(db.feriados.datos):'';
+    const ahora=JSON.stringify(nuevo.datos);
+    const cambiaron=prev!==ahora;
+    if(cambiaron){
+      db.feriados=nuevo;
+      saveDB();
+    }
+    const n=contarFeriados(nuevo.datos);
+    if(el){
+      el.innerHTML=`✅ Feriados de Chile: ${n} fechas${cambiaron?' (guardados)':' (sin cambios)'} · fuente ${nuevo.fuente}`;
+      el.style.color='#065f46';
+    }
+    updateTipoDiaHint(document.getElementById('fecha').value);
+    toast(cambiaron?'Feriados actualizados 📡💕':'Feriados sin cambios ✅');
+    return {ok:true,n:n,cambiaron};
+  }
+  // sin datos nuevos: se conserva la copia guardada (offline)
+  if(el){
+    el.innerHTML=db.feriados
+      ? '⚠️ No se pudo conectar con la API; se siguen usando los feriados guardados.'
+      : '⚠️ No se pudo conectar con la API; la app funciona solo con tus reglas de días.';
+    el.style.color='#9a3412';
+  }
+  toast(ultimoError?('Error feriados: '+ultimoError.message):'No se pudo actualizar');
+  return {ok:false,error:ultimoError&&ultimoError.message};
+  }finally{ _feriadosActualizando=false; }
+}
+function autoTipoDia(fecha){
+  if(!fecha) return 'NORMAL';
+  const f=getFeriado(fecha);
+  if(f){
+    if(f.irrenunciable){
+      const r=reglaFeriadoIrr();
+      return r?r:'NORMAL';
+    }
+    const r=reglaFeriadoNoIrr();
+    return r?r:'NORMAL';
+  }
+  const r=reglasDias()[diaSemana(fecha)];
+  return r?r:'NORMAL';
+}
+function reglasConfiguradas(){
+  const r=db.parametros && db.parametros.reglasDias;
+  if(!r) return false;
+  for(let d=0;d<7;d++) if(!TIPOS_DIA.includes(r[d])) return false;
+  if(!reglaFeriadoIrr() || !reglaFeriadoNoIrr()) return false;
+  return true;
+}
+function tipoDiaExplicacion(fecha){
+  if(!fecha) return '';
+  const f=getFeriado(fecha);
+  const d=diaSemana(fecha);
+  const tipo=reglasDias()[d];
+  if(!reglasConfiguradas()){
+    return '⚠️ Configura las reglas de días en ⚙️ Ajustes antes de registrar turnos';
+  }
+  if(f){
+    if(f.irrenunciable) return `👑 Feriado irrenunciable: ${f.nombre} → ${reglaFeriadoIrr()}`;
+    return `⭐ Feriado renunciable: ${f.nombre} → ${reglaFeriadoNoIrr()}`;
+  }
+  return `${emojiTipo(tipo)} ${DIAS_SEMANA[d]} → ${tipo}`;
+}
+function cardHtml(r){
+  const meta=[];
+  if(r.horaEntrada) meta.push('🚪 '+r.horaEntrada);
+  if(r.horaSalida) meta.push('🏁 '+r.horaSalida);
+  return `
+  <div class="record-card">
+    <div class="record-top">
+      <div class="record-date">📅 ${escapeHtml(formatDate(r.fechaTurno))}</div>
+      ${badge(r.tipoDia)}
+    </div>
+    <div class="record-meta">${meta.map(m=>'<span>'+escapeHtml(m)+'</span>').join('')}</div>
+    ${(() => { const c=calcDay(r); if(!r.horaEntrada||!r.horaSalida) return ''; const rec = r.tipoDia==='ESPECIAL' ? ` · Recargo ${r.recargoEspecial!=null?r.recargoEspecial:(r.recargoPorHoraExtra!=null?parseFloat(String(r.recargoPorHoraExtra)):100)}%` : ''; const he = defaultHE(r.fechaTurno, r.horaEntrada, r.inicioHorasExtras); return `<div class="record-meta"><span>⏱️ Normales ${hrs(c.normal)} · ${hrs(c.extra)} · HE ${he}${rec}</span><span>💰 $${Math.round(c.costo).toLocaleString('es-CL')}</span></div>`; })()}
+    ${r.observaciones?`<div class="record-obs">💬 ${escapeHtml(r.observaciones)}</div>`:''}
+    <div class="record-actions">
+      <button class="btn btn-soft btn-sm" onclick='editRecord(${JSON.stringify(r.id)})'>✏️ Editar</button>
+      <button class="btn btn-danger btn-sm" onclick='deleteRecord(${JSON.stringify(r.id)})'>🗑️ Eliminar</button>
+    </div>
+  </div>`;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function monthKey(fecha){return (fecha||'').slice(0,7);}
+function monthLabel(key){if(!key) return '';const [y,m]=key.split('-');const names=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return names[parseInt(m,10)-1]+' '+y;}
+function monthLabelFull(key){if(!key) return '';const [y,m]=key.split('-');const names=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];return names[parseInt(m,10)-1]+' '+y;}
+function monthNameFull(n){const names=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];return names[parseInt(n,10)-1];}
+let monthFilterTouched=false;
+function populateMonthFilter(){
+  const sel=document.getElementById('filtroMes');
+  if(!sel) return;
+  const cur=sel.value;
+  const keys=[...new Set(Object.values(db.registros).map(r=>monthKey(r.fechaTurno)))].filter(Boolean).sort().reverse();
+  sel.innerHTML='<option value="">Todos los meses</option>'+keys.map(k=>`<option value="${k}">${monthLabel(k)}</option>`).join('');
+  if(monthFilterTouched && cur===''){
+    sel.value='';
+  } else if(cur && keys.includes(cur)){
+    sel.value=cur;
+  } else {
+    const nowMonth=todayStr().slice(0,7);
+    if(keys.includes(nowMonth)) sel.value=nowMonth;
+    else if(keys.length) sel.value=keys[0];
+  }
+}
+function renderHistorial(){
+  populateMonthFilter();
+  const container=document.getElementById('listaRegistros');
+  const q=(document.getElementById('filtroTexto').value||'').toLowerCase();
+  const tipoF=document.getElementById('filtroTipo').value;
+  const mesF=document.getElementById('filtroMes')?document.getElementById('filtroMes').value:'';
+  let filtered=Object.entries(db.registros).map(([id,r])=>({id,...r})).filter(r=>{
+    if(tipoF && r.tipoDia!==tipoF) return false;
+    if(mesF && monthKey(r.fechaTurno)!==mesF) return false;
+    if(q){const hay=[r.fechaTurno,formatDate(r.fechaTurno),r.observaciones,r.tipoDia,r.horaEntrada,r.horaSalida].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+  filtered.sort((a,b)=>(b.fechaTurno||'').localeCompare(a.fechaTurno||'')|| (b.creadoEn||0)-(a.creadoEn||0));
+  if(filtered.length===0){container.innerHTML='<div class="empty">Aún no hay registros. ¡Crea el primero! 💕</div>';return;}
+  const groups={};
+  filtered.forEach(r=>{const k=monthKey(r.fechaTurno);(groups[k]=groups[k]||[]).push(r);});
+  container.innerHTML=Object.keys(groups).sort().reverse().map(k=>{
+    const L=calcLiquidacion(groups[k], (db.bonificaciones&&db.bonificaciones[k])||0);
+    const sub=`<div class="record-meta" style="margin:4px 0 10px;padding:6px 10px;background:#faf7fb;border-radius:10px"><span><b>${groups[k].length}</b> turno(s)</span><span>⏱️ ${hrs(L.norm)} normales · ${hrs(L.ext)} extras</span><span>💰 $${Math.round(L.bruto).toLocaleString('es-CL')} bruto · $${Math.round(L.liquido).toLocaleString('es-CL')} líquido</span></div>`;
+    return `<div class="month-header" style="font-weight:800;margin:12px 0 6px;color:var(--purple)">${monthLabel(k)}</div>
+    ${groups[k].map(cardHtml).join('')}
+    ${sub}`;
+  }).join('');
+}
+
+// ---------- actions ----------
+function editRecord(id){
+  const r=db.registros[id]; if(!r) return;
+  editingId=id;
+  document.getElementById('fecha').value=r.fechaTurno||todayStr();
+  setTipoDia(r.tipoDia || autoTipoDia(r.fechaTurno), r.tipoDiaManual);
+  updateTipoDiaHint(r.fechaTurno);
+  document.getElementById('observaciones').value=r.observaciones||'';
+  document.getElementById('horaEntrada').value=r.horaEntrada||'';
+  document.getElementById('horaSalida').value=r.horaSalida||'';
+  const recEsp2 = r.recargoEspecial!=null ? r.recargoEspecial : (r.recargoPorHoraExtra!=null ? parseFloat(String(r.recargoPorHoraExtra)) : 100);
+  document.getElementById('recargoEspecial').value = isNaN(recEsp2)?100:recEsp2;
+  const he2 = defaultHE(r.fechaTurno, r.horaEntrada, r.inicioHorasExtras);
+  document.getElementById('inicioHE').value = he2;
+  updateConditional();
+  switchTab('registro');
+  document.getElementById('formTitle').textContent='✏️ Editar registro';
+  document.getElementById('btnGuardar').textContent='Actualizar 💕';
+  document.getElementById('btnCancelar').style.display='inline-flex';
+  document.getElementById('btnEditarParametros').style.display='inline-flex';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteRecord(id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  delete db.registros[id];
+  saveDB(); renderHistorial(); toast('Eliminado 🗑️');
+}
+
+// ---------- export/import ----------
+// ---------- firebase ----------
+function fbReady(){return !!(window.FB && window.FB.ready);}
+async function waitForFb(timeoutMs){
+  if(fbReady()) return true;
+  return new Promise(resolve=>{
+    const t=setTimeout(()=>resolve(fbReady()), timeoutMs||8000);
+    window.addEventListener('fb-ready',()=>{clearTimeout(t);resolve(true);},{once:true});
+  });
+}
+async function testFirebase(){
+  const ok=await waitForFb(8000);
+  if(!ok){toast('Firebase no disponible');updateFbStatus();return;}
+  try{
+    await window.FB_AUTH_PROMISE;
+    toast('Conexión OK 💕');
+    updateFbStatus('Conectado ✅');
+  }catch(e){
+    toast('Error auth: '+(e.code||e.message));
+    updateFbStatus('Error auth ❌');
+  }
+}
+async function uploadFirebase(){
+  const ok=await waitForFb(8000);
+  if(!ok){toast('Firebase no disponible');return;}
+  mostrarCarga();
+  try{
+    updateFbStatus('Subiendo...');
+    try { await window.FB_AUTH_PROMISE; } catch(e){ /* auth opcional */ }
+    const _t=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout 15s')),15000));
+    await Promise.race([window.FB_HELPERS.uploadAll(db.registros, db.parametros, db.bonificaciones, db.empresa, db.trabajador, db.feriados), _t]);
+    toast('Subidos '+Object.keys(db.registros).length+' registros a Firebase 💕');
+    updateFbStatus('Sincronizado ✅');
+  }catch(e){
+    console.error(e);
+    toast('Error subiendo: '+(e.code||e.message));
+    updateFbStatus('Error ❌');
+  }finally{ocultarCarga();}
+}
+async function downloadFirebase(){
+  const ok=await waitForFb(8000);
+  if(!ok){toast('Firebase no disponible');return;}
+  mostrarCarga();
+  try{
+    updateFbStatus('Descargando...');
+    try { await window.FB_AUTH_PROMISE; } catch(e){ /* auth opcional */ }
+    const _t=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout 15s')),15000));
+    const {registros,parametros,bonificaciones,empresa,trabajador,feriados}=await Promise.race([window.FB_HELPERS.downloadAll(), _t]);
+    const count=Object.keys(registros||{}).length;
+    if(count>0){
+      // merge: keep newer by actualizadoEn
+      let added=0;
+      for(const [id,r] of Object.entries(registros)){
+        if(!db.registros[id] || (r.actualizadoEn||0)>=(db.registros[id].actualizadoEn||0)){
+          db.registros[id]=r; added++;
+        }
+      }
+      if(parametros) db.parametros=parametros;
+      if(bonificaciones) db.bonificaciones=bonificaciones;
+      if(feriados) db.feriados=normalizarFeriadosGuardados(feriados);
+      if(empresa && Object.keys(empresa).length>0) db.empresa=empresa;
+      if(trabajador && Object.keys(trabajador).length>0) db.trabajador=trabajador;
+      saveDB(); renderAll();
+      estadoFeriados();
+      toast(`Descargados ${count} registros de Firebase 💕`);
+    } else {
+      toast('Firebase vacío');
+    }
+    updateFbStatus('Sincronizado ✅');
+  }catch(e){
+    console.error(e);
+    toast('Error descargando: '+(e.code||e.message));
+    updateFbStatus('Error ❌');
+  }finally{ocultarCarga();}
+}
+function updateFbStatus(msg){
+  const el=document.getElementById('fbStatus');
+  if(!el) return;
+  if(msg){el.textContent='Firebase: '+msg;return;}
+  if(!fbReady()){el.textContent='Firebase: inicializando...';return;}
+  if(window.FB_AUTH_ERROR){
+    const code=window.FB_AUTH_ERROR.code||window.FB_AUTH_ERROR.message;
+    el.textContent='Firebase: error auth ❌ ('+code+')';
+    return;
+  }
+  el.textContent='Firebase: conectando...';
+  window.FB_AUTH_PROMISE.then(()=>{el.textContent='Firebase: conectado ✅';}).catch(e=>{
+    const code=e && (e.code||e.message);
+    el.textContent='Firebase: error auth ❌ ('+code+')';
+  });
+}
+
+async function startRealtimeSync(){
+  const ok=await waitForFb(8000);
+  if(!ok) return;
+  try { await window.FB_AUTH_PROMISE; } catch(e){}
+  if(window._fbSubscribed) return;
+  window._fbSubscribed=true;
+  window.FB_HELPERS.subscribe(({registros,parametros,bonificaciones,empresa,trabajador,feriados})=>{
+    let changed=false;
+    if(registros){
+      for(const [id,r] of Object.entries(registros)){
+        if(!db.registros[id] || (r.actualizadoEn||0)>=(db.registros[id].actualizadoEn||0)){
+          db.registros[id]=r; changed=true;
+        }
+      }
+    }
+    if(parametros){ db.parametros=parametros; changed=true; }
+    if(bonificaciones){ db.bonificaciones=bonificaciones; changed=true; }
+    if(empresa && Object.keys(empresa).length>0){ db.empresa=empresa; changed=true; }
+    if(trabajador && Object.keys(trabajador).length>0){ db.trabajador=trabajador; changed=true; }
+    if(feriados){ db.feriados=normalizarFeriadosGuardados(feriados); changed=true; }
+    if(changed){
+      loadParamsToForm();
+      renderAll();
+      prefillFromFecha();
+      estadoFeriados();
+    }
+  });
+}
+
+// ---------- init ----------
+document.addEventListener('DOMContentLoaded',async()=>{
+  loadLocal();
+
+  // Leer desde Firebase (fuente de verdad)
+  (async () => {
+    mostrarCarga();
+    const ok=await waitForFb(8000);
+    if(!ok){ocultarCarga();return;}
+    try { await window.FB_AUTH_PROMISE; } catch(e){}
+    try {
+      const {registros,parametros,bonificaciones,feriados}=await window.FB_HELPERS.downloadAll();
+      let changed=false;
+      if(registros && Object.keys(registros).length>0){
+        for(const [id,r] of Object.entries(registros)){
+          if(!db.registros[id] || (r.actualizadoEn||0)>=(db.registros[id].actualizadoEn||0)){
+            db.registros[id]=r; if(!r.parametros) r.parametros=JSON.parse(JSON.stringify(parametros||{}));
+            if(r.parametros && r.parametros.cesantia==null) r.parametros.cesantia=0.6;
+            changed=true;
+          }
+        }
+      }
+      if(parametros){ db.parametros=parametros; if(db.parametros.cesantia==null) db.parametros.cesantia=0.6; changed=true; }
+      if(bonificaciones){ db.bonificaciones=bonificaciones; changed=true; }
+      if(feriados){
+        const viejo=feriadosGuardadosViejos(feriados);
+        db.feriados=normalizarFeriadosGuardados(feriados);
+        if(viejo) saveDB(); // reescribe el nodo en el formato mínimo
+        changed=true;
+      }
+      loadParamsToForm(); renderAll(); prefillFromFecha(); setTimeout(loadParamsToForm,100); setTimeout(renderAll,100); setTimeout(prefillFromFecha,100); setTimeout(loadParamsToForm,1000); setTimeout(prefillFromFecha,1000);
+      estadoFeriados();
+      ocultarCarga();
+    } catch(e){ console.warn('Firebase read failed', e); ocultarCarga(); }
+  })();
+
+  updateFbStatus();
+  window.addEventListener('fb-ready',()=>{updateFbStatus();});
+  startRealtimeSync();
+  let _fbPoll=setInterval(()=>{ if(fbReady()){ updateFbStatus(); clearInterval(_fbPoll); } },300);
+  setTimeout(()=>clearInterval(_fbPoll),8000);
+  // reintento de carga por si la primera petición falló
+  setTimeout(async()=>{
+    if(Object.keys(db.registros).length===0 && fbReady()){
+      try { await window.FB_AUTH_PROMISE; } catch(e){}
+      try {
+        const {registros,parametros,bonificaciones,empresa,trabajador}=await window.FB_HELPERS.downloadAll();
+        if(registros && Object.keys(registros).length>0){
+          for(const [id,r] of Object.entries(registros)){ db.registros[id]=r; if(!r.parametros) r.parametros=JSON.parse(JSON.stringify(parametros||{})); if(r.parametros && r.parametros.cesantia==null) r.parametros.cesantia=0.6; }
+          if(parametros){ db.parametros=parametros; if(db.parametros.cesantia==null) db.parametros.cesantia=0.6; }
+          if(bonificaciones){ db.bonificaciones=bonificaciones; }
+          if(!db.feriados && feriados) db.feriados=normalizarFeriadosGuardados(feriados);
+          if(empresa && Object.keys(empresa).length>0){ db.empresa=empresa; }
+          if(trabajador && Object.keys(trabajador).length>0){ db.trabajador=trabajador; }
+          loadParamsToForm(); renderAll(); prefillFromFecha();
+          estadoFeriados();
+        }
+      } catch(e){ console.warn('retry load failed', e); }
+    }
+  }, 3000);
+  // sin almacenamiento en archivo: solo Firebase
+
+  // default form
+  document.getElementById('fecha').value=todayStr();
+  document.getElementById('horaEntrada').value=nowTimeStr();
+  document.getElementById('horaSalida').value='';
+  prefillFromFecha();
+
+  // events
+  document.querySelectorAll('input[name="tipoDia"]').forEach(el=>el.addEventListener('change',()=>{
+    if(!suppressTipoDiaChange) tipoDiaManual=true;
+    updateConditional();
+  }));
+  document.getElementById('horaEntrada').addEventListener('change',()=>{updateConditional();autoHE();});
+  document.getElementById('horaEntrada').addEventListener('input',autoHE);
+  document.getElementById('horaSalida').addEventListener('change',updateConditional);
+  document.getElementById('fecha').addEventListener('change',prefillFromFecha);
+  // sin recargo adicional
+
+  document.getElementById('formTurno').addEventListener('submit',e=>{
+    e.preventDefault();
+    if(!reglasConfiguradas()){
+      toast('⚠️ Configura las reglas de días en ⚙️ Ajustes antes de registrar');
+      switchTab('datos');
+      return;
+    }
+    const tipoDia=document.querySelector('input[name="tipoDia"]:checked')?.value;
+    if(!tipoDia){toast('Elige el tipo de día 💕');return;}
+    const fecha=document.getElementById('fecha').value;
+    if(!fecha){toast('Elige la fecha');return;}
+    const observaciones=document.getElementById('observaciones').value.trim();
+    const horaEntrada=document.getElementById('horaEntrada').value||null;
+    const horaSalida=document.getElementById('horaSalida').value||null;
+    const recargoEspecialRaw=document.getElementById('recargoEspecial').value.trim();
+    const recargoEspecial = recargoEspecialRaw===''?null:parseFloat(recargoEspecialRaw);
+    if(!horaEntrada && !horaSalida){toast('Ingresa al menos una hora');return;}
+    const now=Date.now();
+    ensureMonthSnapshot(monthKey(fecha));
+    const record={
+      tipoDia,fechaTurno:fecha,
+      tipoDiaManual: !!tipoDiaManual,
+      observaciones:observaciones||null,
+      horaEntrada:horaEntrada,
+      horaSalida:horaSalida,
+      recargoEspecial: tipoDia==='ESPECIAL' ? (recargoEspecial==null?100:recargoEspecial) : null,
+      inicioHorasExtras: document.getElementById('inicioHE').value || null,
+      parametros: (()=>{
+        const pr=n=>parseFloat(document.getElementById('pr'+n).value)||0;
+        const sueldoBase=document.getElementById('prSueldoBase').value.trim();
+        const recargo=document.getElementById('prRecargo').value.trim();
+        const grat=document.getElementById('prGrat').value.trim();
+        const afp=document.getElementById('prAfp').value.trim();
+        const salud=document.getElementById('prSalud').value.trim();
+        const cesantia=document.getElementById('prCesantia').value.trim();
+        const sb=parseFloat(sueldoBase)||0;
+        const rc=parseFloat(recargo)||0;
+        const usarGlobales=sueldoBase===''&&recargo===''&&grat===''&&afp===''&&salud===''&&cesantia==='';
+        if(usarGlobales){
+          return JSON.parse(JSON.stringify(db.parametros||{}));
+        }
+        return {
+          sueldoBaseHora: sb,
+          recargoHoraExtra: rc,
+          valorHoraExtra: Math.round(sb*(1+rc/100)),
+          gratificacion: parseFloat(grat)||0,
+          afp: parseFloat(afp)||0,
+          salud: parseFloat(salud)||0,
+          cesantia: parseFloat(cesantia)||0
+        };
+      })(),
+      creadoEn: editingId?(db.registros[editingId]?.creadoEn||now):now,
+      actualizadoEn:now
+    };
+    // Si se edita y cambió la fecha, eliminar el registro anterior (clave = fecha)
+    if(editingId && editingId!==fecha && db.registros[editingId]){
+      delete db.registros[editingId];
+      if(fbReady()) window.FB_HELPERS.deleteRecord(editingId).catch(()=>{});
+    }
+    const targetId=fecha;
+    const prev=db.registros[targetId];
+    if(prev && !editingId){
+      // mismo día ya existe: combinar sin perder datos
+      db.registros[targetId]={...prev,...record,
+        horaEntrada: record.horaEntrada || prev.horaEntrada || null,
+        horaSalida: record.horaSalida || prev.horaSalida || null,
+        observaciones: record.observaciones || prev.observaciones || null,
+         // recargoPorHoraExtra ya no se usa (especial vale hora especial fija)
+        creadoEn: prev.creadoEn||now,
+        actualizadoEn:now};
+      toast('Registro actualizado 💕');
+    } else {
+      db.registros[targetId]={...prev,...record, actualizadoEn:now};
+      if(editingId) toast('Registro actualizado 💕'); else { toast('Guardado con amor 💖'); confetti(); }
+    }
+    editingId=null;
+    saveDB();resetForm();renderHistorial();
+  });
+
+  document.getElementById('btnCancelar').addEventListener('click',resetForm);
+  document.getElementById('btnEditarParametros').addEventListener('click',()=>{
+    const wrap=document.getElementById('parametrosRegistroWrap');
+    const mostrando=wrap.style.display!=='none';
+    wrap.style.display=mostrando?'none':'block';
+    if(!mostrando){
+      // prellenar con los parámetros del registro actual
+      const r=db.registros[editingId];
+      const p=r&&r.parametros?r.parametros:{};
+      document.getElementById('prSueldoBase').value=p.sueldoBaseHora!=null?p.sueldoBaseHora:'';
+      document.getElementById('prRecargo').value=p.recargoHoraExtra!=null?p.recargoHoraExtra:'';
+      const elV=document.getElementById('prValorHE');
+      elV.textContent=p.valorHoraExtra!=null?('$'+Math.round(p.valorHoraExtra).toLocaleString('es-CL')):'$0';
+      document.getElementById('prGrat').value=p.gratificacion!=null?p.gratificacion:'';
+      document.getElementById('prAfp').value=p.afp!=null?p.afp:'';
+      document.getElementById('prSalud').value=p.salud!=null?p.salud:'';
+      document.getElementById('prCesantia').value=p.cesantia!=null?p.cesantia:'';
+    }
+  });
+  document.getElementById('prUsarGlobales').addEventListener('click',()=>{
+    const p=db.parametros||{};
+    document.getElementById('prSueldoBase').value=p.sueldoBaseHora!=null?p.sueldoBaseHora:'';
+    document.getElementById('prRecargo').value=p.recargoHoraExtra!=null?p.recargoHoraExtra:'';
+    const elV=document.getElementById('prValorHE');
+    elV.textContent=p.valorHoraExtra!=null?('$'+Math.round(p.valorHoraExtra).toLocaleString('es-CL')):'$0';
+    document.getElementById('prGrat').value=p.gratificacion!=null?p.gratificacion:'';
+    document.getElementById('prAfp').value=p.afp!=null?p.afp:'';
+    document.getElementById('prSalud').value=p.salud!=null?p.salud:'';
+    document.getElementById('prCesantia').value=p.cesantia!=null?p.cesantia:'';
+  });
+  document.getElementById('prActualizar').addEventListener('click',()=>{
+    if(!editingId){return toast('No hay turno seleccionado');}
+    const r=db.registros[editingId]; if(!r){return toast('Registro no encontrado');}
+    const pr=n=>parseFloat(document.getElementById('pr'+n).value)||0;
+    r.parametros={
+      sueldoBaseHora: pr('SueldoBase'),
+      recargoHoraExtra: pr('Recargo'),
+      valorHoraExtra: pr('ValorHE'),
+      gratificacion: pr('Grat'),
+      afp: pr('Afp'),
+      salud: pr('Salud'),
+      cesantia: pr('Cesantia')
+    };
+    r.actualizadoEn=Date.now();
+    saveDB();
+    renderHistorial();
+    toast('Parámetros de este turno actualizados 💕');
+  });
+  document.getElementById('prCancelarParametros').addEventListener('click',()=>{
+    const wrap=document.getElementById('parametrosRegistroWrap');
+    wrap.style.display='none';
+    ['prSueldoBase','prRecargo','prGrat','prAfp','prSalud','prCesantia'].forEach(id=>{
+      document.getElementById(id).value='';
+    });
+    document.getElementById('prValorHE').textContent='$0';
+  });
+  ['prSueldoBase','prRecargo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input',()=>{
+      const sb=parseFloat(document.getElementById('prSueldoBase').value)||0;
+      const rc=parseFloat(document.getElementById('prRecargo').value)||0;
+      document.getElementById('prValorHE').textContent='$'+Math.round(sb*(1+rc/100)).toLocaleString('es-CL');
+    });
+  });
+
+  // tabs
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+
+  // filters
+  document.getElementById('filtroTexto').addEventListener('input',renderHistorial);
+  document.getElementById('filtroTipo').addEventListener('change',renderHistorial);
+  const fm=document.getElementById('filtroMes'); if(fm) fm.addEventListener('change',()=>{monthFilterTouched=true;renderHistorial();renderLiquidacion();});
+
+  // datos buttons (algunos pueden no existir tras simplificar la UI)
+  const _on=(id,fn)=>{const el=document.getElementById(id); if(el) el.addEventListener('click',fn);};
+  // seed restore removed (app now reads only from Firebase)
+  _on('btnSaveParams',saveParams);
+  _on('btnSavePdfData',savePdfData);
+  _on('btnActualizarFeriados',()=>{ actualizarFeriados(true); });
+  _on('btnSaveReglas',saveReglas);
+  const _recompute=()=>recomputeValorHE();
+  const ps=document.getElementById('pSueldoBase'); if(ps) ps.addEventListener('input',_recompute);
+  const pr=document.getElementById('pRecargo'); if(pr) pr.addEventListener('input',_recompute);
+  // Los parámetros se guardan solo al apretar "Guardar parámetros"
+  _on('btnTestFb',testFirebase);
+  _on('btnUploadFb',uploadFirebase);
+  const dl=document.getElementById('btnDownloadFb'); if(dl) dl.addEventListener('click',downloadFirebase);
+  // firebase buttons wired above via _on
+  // auto-sync siempre activo (solo Firebase)
+  // btnSaveParams wired above via _on
+
+  loadParamsToForm();
+  renderAll();
+  // asegurar render cuando los datos de Firebase terminen de cargar
+  let _renderPoll=setInterval(()=>{ if(Object.keys(db.registros).length>0){ renderAll(); prefillFromFecha(); estadoFeriados(); clearInterval(_renderPoll); } },1000);
+  setTimeout(()=>clearInterval(_renderPoll),60000);
+  startHearts();
+  // feriados: solo mostrar copia guardada. No consultar la API automáticamente.
+  estadoFeriados();
+});
+
+
+function loadParamsToForm(){
+  const p=db.parametros||{};
+  document.getElementById('pSueldoBase').value=p.sueldoBaseHora!=null?p.sueldoBaseHora:'';
+  document.getElementById('pRecargo').value=p.recargoHoraExtra!=null?p.recargoHoraExtra:'';
+  document.getElementById('pValorHE').textContent=p.valorHoraExtra!=null?('$'+Math.round(p.valorHoraExtra).toLocaleString('es-CL')):'$0';
+  document.getElementById('pGrat').value=p.gratificacion!=null?p.gratificacion:'';
+  document.getElementById('pAfp').value=p.afp!=null?p.afp:'';
+  document.getElementById('pSalud').value=p.salud!=null?p.salud:'';
+  document.getElementById('pCesantia').value=p.cesantia!=null?p.cesantia:'';
+  // Datos PDF
+  document.getElementById('pdfEmpresa').value=db.empresa.nombre||'';
+  document.getElementById('pdfRutEmpresa').value=db.empresa.rut||'';
+  document.getElementById('pdfDireccion').value=db.empresa.direccion||'';
+  document.getElementById('pdfTrabajador').value=db.trabajador.nombre||'';
+  document.getElementById('pdfRutTrabajador').value=db.trabajador.rut||'';
+  document.getElementById('pdfCargo').value=db.trabajador.cargo||'';
+  // Reglas de clasificación de días (se guardan dentro de parametros)
+  buildReglasForm();
+  pintarReglasForm();
+  // limpieza: si quedó una clave obsoleta de la vieja sección de fechas especiales, se quita de memoria
+  // (nunca escribir aquí: cualquier saveDB() temprano podría sobreescribir datos aún no descargados)
+  if(db.parametros && db.parametros.fechasEspeciales){
+    delete db.parametros.fechasEspeciales;
+  }
+  recomputeValorHE();
+}
+function recomputeValorHE(){
+  const base=parseFloat(document.getElementById('pSueldoBase').value);
+  const rec=parseFloat(document.getElementById('pRecargo').value);
+  const el=document.getElementById('pValorHE');
+  if(!isNaN(base) && !isNaN(rec)){
+    el.textContent='$'+Math.round(base*(1+rec/100)).toLocaleString('es-CL');
+  } else {
+    el.textContent='$0';
+  }
+}
+// ---------- reglas de días (UI) ----------
+function buildReglasForm(){
+  const cont=document.getElementById('reglasDias');
+  if(!cont || cont.dataset.built) return;
+  cont.dataset.built='1';
+  const items=DIAS_SEMANA.map((nombre,d)=>`
+    <div class="${d===4||d===6?'sep-derecho':''}">
+      <label style="margin:0 0 4px;font-size:13px" for="reglaDia-${d}">${nombre}</label>
+      <select id="reglaDia-${d}" data-regla-dia="${d}">
+        <option value="">-- Selecciona --</option>
+        ${TIPOS_DIA.map(t=>`<option value="${t}">${t}</option>`).join('')}
+      </select>
+    </div>`);
+  items.push(`
+    <div>
+      <label style="margin:0 0 4px;font-size:13px" for="reglaFeriadoIrr">Feriados irrenunciables</label>
+      <select id="reglaFeriadoIrr">
+        <option value="">-- Selecciona --</option>
+        ${TIPOS_FERIADO.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}
+      </select>
+    </div>`);
+  items.push(`
+    <div>
+      <label style="margin:0 0 4px;font-size:13px" for="reglaFeriadoNoIrr">Feriados renunciables</label>
+      <select id="reglaFeriadoNoIrr">
+        <option value="">-- Selecciona --</option>
+        ${TIPOS_FERIADO.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}
+      </select>
+    </div>`);
+  cont.innerHTML=items.join('');
+}
+function pintarReglasForm(){
+  const reglas=reglasDias();
+  document.querySelectorAll('select[data-regla-dia]').forEach(sel=>{
+    sel.value=reglas[Number(sel.dataset.reglaDia)];
+  });
+  const rfi=document.getElementById('reglaFeriadoIrr');
+  if(rfi) rfi.value=reglaFeriadoIrr();
+  const rfn=document.getElementById('reglaFeriadoNoIrr');
+  if(rfn) rfn.value=reglaFeriadoNoIrr();
+}
+function saveReglas(){
+  if(!db.parametros) db.parametros={};
+  const reglas={};
+  document.querySelectorAll('select[data-regla-dia]').forEach(sel=>{
+    reglas[Number(sel.dataset.reglaDia)]=sel.value;
+  });
+  db.parametros.reglasDias=reglas;
+  const rfi=document.getElementById('reglaFeriadoIrr');
+  if(rfi) db.parametros.reglaFeriadoIrr=rfi.value;
+  const rfn=document.getElementById('reglaFeriadoNoIrr');
+  if(rfn) db.parametros.reglaFeriadoNoIrr=rfn.value;
+  saveDB();
+  updateTipoDiaHint(document.getElementById('fecha').value);
+}
+function saveParams(silent){
+  recomputeValorHE();
+  const v=id=>document.getElementById(id).value.trim();
+  const n=id=>{const x=v(id); return x===''?null:parseFloat(x);};
+  const prev=db.parametros||{};
+  const sb=n('pSueldoBase')||0;
+  const rc=n('pRecargo')||0;
+  db.parametros={
+    ...prev,
+    sueldoBaseHora: sb,
+    recargoHoraExtra: rc,
+    valorHoraExtra: Math.round(sb*(1+rc/100)),
+    gratificacion: n('pGrat'),
+    afp: n('pAfp'),
+    salud: n('pSalud'),
+    cesantia: n('pCesantia')
+  };
+  saveDB();
+  if(!silent) toast('Parámetros guardados 💕');
+}
+function savePdfData(){
+  db.empresa={
+    nombre: document.getElementById('pdfEmpresa').value.trim()||'',
+    rut: document.getElementById('pdfRutEmpresa').value.trim()||'',
+    direccion: document.getElementById('pdfDireccion').value.trim()||''
+  };
+  db.trabajador={
+    nombre: document.getElementById('pdfTrabajador').value.trim()||'',
+    rut: document.getElementById('pdfRutTrabajador').value.trim()||'',
+    cargo: document.getElementById('pdfCargo').value.trim()||''
+  };
+  saveDB();
+  toast('Datos PDF guardados 💕');
+}
+function toMinutes(hhmm){if(!hhmm) return null;const parts=String(hhmm).split(':');if(parts.length<2) return null;const h=Number(parts[0]);const m=Number(parts[1]);if(!isFinite(h)||!isFinite(m)) return null;return h*60+m;}
+function paramsForMonth(mes){
+  if(db.parametrosPorMes && db.parametrosPorMes[mes]) return db.parametrosPorMes[mes];
+  return db.parametros||{};
+}
+function ensureMonthSnapshot(mes){
+  if(!mes) return;
+  if(!db.parametrosPorMes) db.parametrosPorMes={};
+  if(!db.parametrosPorMes[mes]){
+    db.parametrosPorMes[mes]=JSON.parse(JSON.stringify(db.parametros||{}));
+  }
+}
+function specialRate(r,p){
+  // Día especial: todas las horas valen hora especial (sueldo base + recargo elegido)
+  const base=p.sueldoBaseHora||0;
+  let pct=100;
+  if(r.recargoEspecial!=null && isFinite(r.recargoEspecial)) pct=Number(r.recargoEspecial);
+  else if(r.recargoPorHoraExtra!=null){
+    const parsed=parseFloat(String(r.recargoPorHoraExtra));
+    if(isFinite(parsed)) pct=parsed;
+  }
+  return base*(1 + (pct||0)/100);
+}
+
+
+function calcDay(r){
+  const p=r.parametros || db.parametros || {};
+  const base=p.sueldoBaseHora||0;
+  const fecha=r.fechaTurno||'';
+  const inicioStr = defaultHE(fecha, r.horaEntrada, r.inicioHorasExtras);
+  const inicio=toMinutes(inicioStr)||(17*60);
+  const ent=toMinutes(r.horaEntrada); const sal=toMinutes(r.horaSalida);
+  if(ent===null||sal===null) return {normal:0,extra:0,total:0,costoNormal:0,costoExtra:0,costo:0};
+  let s=sal; if(s<=ent) s+=24*60;
+  const totalMin=s-ent;
+  const tipo=r.tipoDia;
+  if(tipo==='EXTRA'){
+    const rate=p.valorHoraExtra||0;
+    const c=Math.round((totalMin/60)*rate);
+    return {normal:0,extra:totalMin,total:totalMin,costoNormal:0,costoExtra:c,costo:c};
+  }
+  if(tipo==='ESPECIAL'){
+    const rate=specialRate(r,p);
+    const c=Math.round((totalMin/60)*rate);
+    return {normal:0,extra:totalMin,total:totalMin,costoNormal:0,costoExtra:c,costo:c};
+  }
+  const normal=Math.max(0, Math.min(s,inicio)-ent);
+  const extra=Math.max(0, s-Math.max(ent,inicio));
+  const costoNormal=Math.round((normal/60)*base);
+  const costoExtra=Math.round((extra/60)*(p.valorHoraExtra||0));
+  return {normal,extra,total:totalMin,costoNormal,costoExtra,costo:costoNormal+costoExtra};
+}
+
+
+function calcLiquidacion(records, bonificacionMes){
+  let sueldo=0,norm=0,ext=0,turnos=0,grat=0,imponible=0,afp=0,cesantia=0,salud=0,liquido=0;
+  (records||[]).forEach(r=>{
+    const c=calcDay(r);
+    turnos++;
+    norm+=c.normal;
+    ext+=c.extra;
+    sueldo+=c.costo;
+    const p=r.parametros || db.parametros || {};
+    const g=c.costo*((p.gratificacion||0)/100);
+    const imp=c.costo+g;
+    const a=imp*((p.afp||0)/100);
+    const ce=imp*(((p.cesantia!=null?p.cesantia:0.6))/100);
+    const s=imp*((p.salud||0)/100);
+    grat+=g;
+    imponible+=imp;
+    afp+=a;
+    cesantia+=ce;
+    salud+=s;
+    liquido+=imp-a-ce-s;
+  });
+  const bonif=Number(bonificacionMes)||0;
+  if(bonif){
+    const p=db.parametros||{};
+    const g=bonif*((p.gratificacion||0)/100);
+    const imp=bonif+g;
+    const a=imp*((p.afp||0)/100);
+    const ce=imp*(((p.cesantia!=null?p.cesantia:0.6))/100);
+    const s=imp*((p.salud||0)/100);
+    grat+=g;
+    imponible+=imp;
+    afp+=a;
+    cesantia+=ce;
+    salud+=s;
+    liquido+=imp-a-ce-s;
+  }
+  return {turnos,norm,ext,sueldo,bonif,bruto:sueldo+bonif,grat,imponible,afp,cesantia,salud,liquido};
+}
+function renderLiquidacion(){
+  const container=document.getElementById('liquidacionMes');
+  if(!container) return;
+  const keys=[...new Set(Object.values(db.registros).map(r=>monthKey(r.fechaTurno)))].filter(Boolean).sort();
+  const yearEl=document.getElementById('liquidacionYear');
+  const monthEl=document.getElementById('liquidacionMonth');
+  const currentYear=yearEl?yearEl.value:'';
+  const currentMonth=monthEl?monthEl.value:'';
+  const years=[...new Set(keys.map(k=>k.slice(0,4)))].sort().reverse();
+
+  // Mes actual por defecto si no hay selección previa
+  const hoy=todayStr();
+  const hoyYear=hoy.slice(0,4);
+  const hoyMonth=hoy.slice(5,7);
+  const targetYear=currentYear || years[0] || hoyYear;
+  const monthsWithData=currentYear ? [...new Set(keys.filter(k=>k.slice(0,4)===currentYear).map(k=>k.slice(5,7)))].sort() : [];
+  const targetMonth=currentMonth || (monthsWithData[0] || hoyMonth);
+  const target=targetYear+'-'+targetMonth;
+
+  const recs=Object.values(db.registros).filter(r=>monthKey(r.fechaTurno)===target);
+  const bonis=getBonos(target);
+  const bonif=bonis.reduce((s,b)=>s+(b.monto||0),0);
+  const fmt=n=>Math.round(n).toLocaleString('es-CL');
+  const p=db.parametros||{};
+
+  const allMonths=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const showMonths=currentYear ? monthsWithData : allMonths;
+
+  const yearOpts=years.map(y=>`<option value="${y}" ${y===targetYear?'selected':''}>${y}</option>`).join('');
+  const monthOpts=showMonths.map(m=>`<option value="${m}" ${m===targetMonth?'selected':''}>${monthNameFull(m)}</option>`).join('');
+
+  if(recs.length===0){
+    container.innerHTML=`
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="display:flex;justify-content:center;gap:8px">
+          <select id="liquidacionYear" onchange="renderLiquidacion()" style="padding:8px 14px;border:2px solid var(--border);border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;color:var(--purple);background:#fff;cursor:pointer">
+            ${yearOpts}
+          </select>
+          <select id="liquidacionMonth" onchange="renderLiquidacion()" style="padding:8px 14px;border:2px solid var(--border);border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;color:var(--purple);background:#fff;cursor:pointer">
+            ${monthOpts}
+          </select>
+        </div>
+      </div>
+      <div class="empty">Sin datos para este mes</div>
+    `;
+    return;
+  }
+
+  const L=calcLiquidacion(recs, bonif);
+  const totalHoras=(L.norm+L.ext)/60;
+  const descuentos=L.afp+L.cesantia+L.salud;
+
+  container.innerHTML=`
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:center;gap:8px">
+        <select id="liquidacionYear" onchange="renderLiquidacion()" style="padding:8px 14px;border:2px solid var(--border);border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;color:var(--purple);background:#fff;cursor:pointer">
+          ${yearOpts}
+        </select>
+        <select id="liquidacionMonth" onchange="renderLiquidacion()" style="padding:8px 14px;border:2px solid var(--border);border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;color:var(--purple);background:#fff;cursor:pointer">
+          ${monthOpts}
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px;background:#faf7fb;border:1px dashed var(--border);border-radius:12px;padding:0">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer" onclick="toggleBonificaciones('${target}')" id="bonifHeader-${target}">
+        <span style="font-size:13px;font-weight:700">🎁 Bonificaciones del mes</span>
+        <span id="bonifArrow-${target}" style="font-size:10px">▼</span>
+        <span id="bonifTotal-${target}" style="margin-left:auto;font-size:12px;color:var(--muted)">Total: $0</span>
+      </div>
+      <div id="bonifPanel-${target}" style="padding:0 14px 14px 14px;display:none">
+        <div id="bonifList-${target}" style="margin-bottom:10px">
+          ${renderBonifList(target)}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="bonifNombre-${target}" placeholder="Nombre del bono" style="flex:1;padding:8px 10px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px">
+          <input type="number" id="bonifMonto-${target}" placeholder="$" step="1" style="width:110px;padding:8px 10px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px">
+          <button type="button" class="btn btn-soft btn-sm" onclick="agregarBonif('${target}')">Agregar</button>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button type="button" class="btn btn-soft btn-sm" onclick="guardarBonificaciones('${target}')">💾 Guardar</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="cancelarBonificaciones('${target}')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <button class="btn btn-primary" id="btnPdfRRHH" style="width:100%;padding:12px;font-size:15px;font-weight:700" onclick="generateRRHHPDF('${target}')">
+        📄 Generar PDF para RRHH - ${monthLabelFull(target)}
+      </button>
+      <p id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:6px;text-align:center"></p>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:16px;padding:14px 16px;margin-bottom:12px;border:1px solid #a7f3d0">
+      <div style="font-weight:800;color:#065f46;margin-bottom:8px;font-size:15px">⏱️ Horas trabajadas</div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Turnos realizados</span><b>${L.turnos}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Horas normales</span><b>${hrs(L.norm)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Horas extras</span><b>${hrs(L.ext)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px;border-top:1px solid #a7f3d0;margin-top:6px"><span style="font-weight:700">Total horas</span><b style="color:#065f46">${hrs(totalHoras)}</b></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:16px;padding:14px 16px;margin-bottom:12px;border:1px solid #ddd6fe">
+      <div style="font-weight:800;color:#5b21b6;margin-bottom:8px;font-size:15px">💰 Lo que ganaste</div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Sueldo por horas</span><b>$${fmt(L.sueldo)}</b></div>
+      ${bonis && bonis.length ? bonis.map(b=>`<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:12px;color:var(--muted)"><span>${escapeHtml(b.nombre)}</span><span>$${fmt(b.monto)}</b></div>`).join('') : ''}
+      ${bonis && bonis.length ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px;border-top:1px solid #ddd6fe;margin-top:4px"><span style="font-weight:700">Total bonificaciones</span><b>$${fmt(L.bonif)}</b></div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Gratificación legal (${p.gratificacion||0}%)</span><b>$${fmt(L.grat)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px;border-top:1px solid #ddd6fe;margin-top:6px"><span style="font-weight:700">Total imponible</span><b style="color:#5b21b6">$${fmt(L.imponible)}</b></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#fff0f6,#fce7f3);border-radius:16px;padding:14px 16px;margin-bottom:12px;border:1px solid #fbcfe8">
+      <div style="font-weight:800;color:#9d174d;margin-bottom:8px;font-size:15px">📉 Descuentos</div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>AFP (${p.afp||0}%)</span><b style="color:#b91c1c">-$${fmt(L.afp)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Seguro cesantía (${p.cesantia!=null?p.cesantia:0.6}%)</span><b style="color:#b91c1c">-$${fmt(L.cesantia)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Salud (${p.salud||0}%)</span><b style="color:#b91c1c">-$${fmt(L.salud)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px;border-top:1px solid #fbcfe8;margin-top:6px"><span style="font-weight:700">Total descuentos</span><b style="color:#b91c1c">-$${fmt(descuentos)}</b></div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#065f46,#047857);border-radius:18px;padding:18px 16px;text-align:center;color:#fff;box-shadow:0 8px 20px rgba(6,95,70,.3)">
+      <div style="font-size:13px;opacity:.9;font-weight:700;text-transform:uppercase;letter-spacing:.5px">💵 Te depositarán (líquido)</div>
+      <div style="font-size:30px;font-weight:800;margin-top:4px">$${fmt(L.liquido)}</div>
+      <div style="font-size:12px;opacity:.85;margin-top:6px">Imponible $${fmt(L.imponible)} − descuentos $${fmt(descuentos)}</div>
+    </div>
+  `;
+  // Actualizar el total de bonificaciones en el encabezado del panel
+  const elTotal=document.getElementById('bonifTotal-'+target);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round(bonif).toLocaleString('es-CL');
+}
+// ---------- Bonificaciones múltiples por mes ----------
+
+let bonifEditando = { mes: null, index: null };
+
+function getBonos(mes){
+  const b=db.bonificaciones && db.bonificaciones[mes];
+  if(!b) return [];
+  if(Array.isArray(b)) return b;
+  // Firebase a veces guarda arrays como objetos con claves numéricas
+  if(typeof b==='object'){
+    return Object.keys(b).sort((a,c)=>parseInt(a)-parseInt(c)).map(k=>b[k]);
+  }
+  return [];
+}
+
+function toggleBonificaciones(mes){
+  const panel=document.getElementById('bonifPanel-'+mes);
+  const arrow=document.getElementById('bonifArrow-'+mes);
+  if(!panel) return;
+  const mostrando=panel.style.display!=='none';
+  panel.style.display=mostrando?'none':'block';
+  if(arrow) arrow.textContent=mostrando?'▼':'▲';
+}
+
+function renderBonifList(mes){
+  const bonis=getBonos(mes);
+  const total=bonis.reduce((s,b)=>s+(b.monto||0),0);
+  return bonis.map((b,i)=>{
+    const esEditando = bonifEditando.mes === mes && bonifEditando.index === i;
+    if(esEditando){
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <input type="text" id="editNombre-${mes}-${i}" value="${escapeHtml(b.nombre||'Bonificación')}" style="flex:1;padding:4px 8px;border:2px solid var(--purple);border-radius:8px;font-family:inherit;font-size:12px">
+        <input type="number" id="editMonto-${mes}-${i}" value="${b.monto||0}" style="width:100px;padding:4px 8px;border:2px solid var(--purple);border-radius:8px;font-family:inherit;font-size:12px">
+        <button type="button" class="btn btn-soft btn-sm" onclick="guardarEdicionBonif('${mes}',${i})">✓</button>
+        <button type="button" class="btn btn-soft btn-sm" onclick="cancelarEdicionBonif()">✗</button>
+      </div>`;
+    }
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="flex:1">${escapeHtml(b.nombre||'Bonificación')}</span>
+      <span>$${Math.round(b.monto||0).toLocaleString('es-CL')}</span>
+      <div style="display:flex;gap:4px">
+        <button type="button" class="btn btn-soft btn-sm" onclick="editarBonif('${mes}',${i})">✏️</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarBonif('${mes}',${i})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editarBonif(mes, index){
+  bonifEditando = { mes, index };
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+}
+
+function cancelarEdicionBonif(){
+  bonifEditando = { mes: null, index: null };
+  // Re-renderizar el panel abierto si hay uno
+  document.querySelectorAll('[id^="bonifPanel-"]').forEach(panel => {
+    if(panel.style.display !== 'none'){
+      const mes = panel.id.replace('bonifPanel-', '');
+      const list=document.getElementById('bonifList-'+mes);
+      if(list) list.innerHTML=renderBonifList(mes);
+    }
+  });
+}
+
+function guardarEdicionBonif(mes, index){
+  const nombreEl=document.getElementById('editNombre-'+mes+'-'+index);
+  const montoEl=document.getElementById('editMonto-'+mes+'-'+index);
+  const nombre=nombreEl.value.trim();
+  const monto=parseFloat(montoEl.value);
+  if(!nombre){toast('Ingresa el nombre del bono 💕');return;}
+  if(!isFinite(monto)||monto<=0){toast('Ingresa un monto válido 💕');return;}
+  if(!db.bonificaciones || !Array.isArray(db.bonificaciones[mes])) return;
+  db.bonificaciones[mes][index] = {nombre, monto:Math.round(monto)};
+  bonifEditando = { mes: null, index: null };
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+  const elTotal=document.getElementById('bonifTotal-'+mes);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round(db.bonificaciones[mes].reduce((s,b)=>s+(b.monto||0),0)).toLocaleString('es-CL');
+  toast('Bono editado ✏️');
+}
+
+function agregarBonif(mes){
+  const nombreEl=document.getElementById('bonifNombre-'+mes);
+  const montoEl=document.getElementById('bonifMonto-'+mes);
+  const nombre=nombreEl.value.trim();
+  const monto=parseFloat(montoEl.value);
+  if(!nombre){toast('Ingresa el nombre del bono 💕');return;}
+  if(!isFinite(monto)||monto<=0){toast('Ingresa un monto válido 💕');return;}
+  if(!db.bonificaciones) db.bonificaciones={};
+  if(!Array.isArray(db.bonificaciones[mes])) db.bonificaciones[mes]=[];
+  db.bonificaciones[mes].push({nombre, monto:Math.round(monto)});
+  nombreEl.value='';
+  montoEl.value='';
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+  const elTotal=document.getElementById('bonifTotal-'+mes);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round(db.bonificaciones[mes].reduce((s,b)=>s+(b.monto||0),0)).toLocaleString('es-CL');
+  toast('Bono agregado 💕');
+}
+
+function eliminarBonif(mes, index){
+  if(!db.bonificaciones || !Array.isArray(db.bonificaciones[mes])) return;
+  db.bonificaciones[mes].splice(index,1);
+  if(db.bonificaciones[mes].length===0) delete db.bonificaciones[mes];
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+  const elTotal=document.getElementById('bonifTotal-'+mes);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round((db.bonificaciones[mes]||[]).reduce((s,b)=>s+(b.monto||0),0)).toLocaleString('es-CL');
+  toast('Bono eliminado 🗑️');
+}
+
+function guardarBonificaciones(mes){
+  saveDB();
+  renderAll();
+  toast('Bonificaciones guardadas 💕');
+}
+
+function cancelarBonificaciones(mes){
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+  const elTotal=document.getElementById('bonifTotal-'+mes);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round((db.bonificaciones[mes]||[]).reduce((s,b)=>s+(b.monto||0),0)).toLocaleString('es-CL');
+  toast('Cambios descartados');
+}
+
+function guardarBonificaciones(mes){
+  saveDB();
+  renderAll();
+  toast('Bonificaciones guardadas 💕');
+}
+
+function cancelarBonificaciones(mes){
+  // Recargar desde db para descartar cambios no guardados
+  const list=document.getElementById('bonifList-'+mes);
+  if(list) list.innerHTML=renderBonifList(mes);
+  const elTotal=document.getElementById('bonifTotal-'+mes);
+  if(elTotal) elTotal.textContent='Total: $'+Math.round((db.bonificaciones[mes]||[]).reduce((s,b)=>s+(b.monto||0),0)).toLocaleString('es-CL');
+  toast('Cambios descartados');
+}
+
+// ---------- PDF para RRHH ----------
+
+// ---------- PDF para RRHH ----------
+async function generateRRHHPDF(mes){
+  const { jsPDF } = window.jspdf || {};
+  if(!jsPDF){
+    const st=document.getElementById('pdfStatus');
+    if(st){st.textContent='Error cargando librería PDF';st.style.color='#b91c1c';}
+    return;
+  }
+
+  const recs=Object.values(db.registros)
+    .filter(r=>monthKey(r.fechaTurno)===mes)
+    .sort((a,b)=>a.fechaTurno.localeCompare(b.fechaTurno));
+  if(recs.length===0){
+    const st=document.getElementById('pdfStatus');
+    if(st){st.textContent='Sin datos para este mes';st.style.color='#b91c1c';}
+    return;
+  }
+
+  const st=document.getElementById('pdfStatus');
+  if(st){st.textContent='Generando PDF...';st.style.color='#5b21b6';}
+
+  const bonisPDF=getBonos(mes);
+  const bonif=bonisPDF.reduce((s,b)=>s+(b.monto||0),0);
+  const L=calcLiquidacion(recs, bonif);
+  const p=db.parametros||{};
+  const fmt=n=>Math.round(n).toLocaleString('es-CL');
+  const hrs=n=>{
+    const totalMin=Math.round(n);
+    const h=Math.floor(totalMin/60);
+    const m=totalMin%60;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  };
+  const hrsHM=n=>{
+    const h=Math.floor(n);
+    const m=Math.round((n-h)*60);
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  };
+
+  const emp=db.empresa||{};
+  const trab=db.trabajador||{};
+
+  const doc=new jsPDF({ orientation:'p', unit:'mm', format:'letter' });
+  const pw=doc.internal.pageSize.getWidth();   // carta 215.9 mm
+  const ph=doc.internal.pageSize.getHeight();  // carta 279.4 mm
+  const mx=12;
+  const usable=pw-mx*2;
+  const fechaHoraEmision=new Date().toLocaleDateString('es-CL')+' '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+
+  doc.setProperties({
+    title: 'Liquidación de Remuneraciones - '+(monthLabel(mes)||mes),
+    subject: 'Liquidación de remuneraciones estimada',
+    author: emp.nombre||'Registro de Turnos',
+    keywords: 'liquidacion, RRHH, turnos, Chile',
+    created: new Date()
+  });
+
+  // ---------- Pie de página con numeración y fecha/hora ----------
+  let totalPagesReal=1;
+  function drawFooter(pageNum, totalPages){
+    doc.setFontSize(7.5);
+    doc.setTextColor(120,120,120);
+    doc.setFont(undefined,'normal');
+    doc.text('Página '+pageNum+' de '+totalPages, pw-mx-30, ph-8, {align:'right'});
+    doc.text(fechaHoraEmision, mx, ph-8);
+    doc.setDrawColor(200,200,200);
+    doc.line(mx, ph-10, pw-mx, ph-10);
+  }
+  // Numeración final: recorre todas las páginas ya generadas y les pone su pie correcto
+  function dibujarPieEnTodasLasPaginas(){
+    const total=doc.getNumberOfPages();
+    for(let pg=1; pg<=total; pg++){
+      doc.setPage(pg);
+      drawFooter(pg, total);
+    }
+  }
+
+  // ---------- Bloque de firmas con espacio real ----------
+  function drawSignatures(yStart){
+    doc.setLineWidth(0.4);
+    doc.setDrawColor(150,150,150);
+    doc.line(mx, yStart, mx+55, yStart);
+    doc.line(pw-mx-55, yStart, pw-mx, yStart);
+    doc.setFontSize(9);
+    doc.setTextColor(60,60,60);
+    doc.text('Firma Trabajador', mx, yStart+5);
+    doc.text('Firma Empleador', pw-mx-55, yStart+5);
+  }
+
+  // ---------- Separador visual ----------
+  function drawSeparator(yPos){
+    doc.setLineWidth(0.6);
+    doc.setDrawColor(100,100,100);
+    doc.line(mx, yPos, pw-mx, yPos);
+  }
+
+  // ============================================================
+  // PÁGINA 1: Tabla de registros
+  // ============================================================
+  let y=18;
+
+  // Encabezado de empresa
+  doc.setFontSize(13);
+  doc.setTextColor(168,139,250);
+  doc.text('LIQUIDACIÓN DE REMUNERACIONES', pw/2, y, {align:'center'});
+  y+=7;
+  doc.setFontSize(7.5);
+  doc.setTextColor(90,90,90);
+  const nombreLineas = doc.splitTextToSize(emp.nombre||'', usable);
+  doc.text(nombreLineas, pw/2, y, {align:'center'});
+  y+=nombreLineas.length*3.6+2;
+  const rutDir = (emp.rut?'RUT: '+emp.rut:'')+'  |  '+(emp.direccion||'');
+  const rutDirLineas = doc.splitTextToSize(rutDir, usable);
+  doc.text(rutDirLineas, pw/2, y, {align:'center'});
+  y+=rutDirLineas.length*3.6+6;
+
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(168,139,250);
+  doc.line(mx, y, pw-mx, y);
+  y+=7;
+
+  // Datos del trabajador
+  doc.setFontSize(8.5);
+  doc.setTextColor(30,30,30);
+  doc.setFont(undefined,'bold');
+  doc.text('TRABAJADOR:', mx, y);
+  doc.setFont(undefined,'normal');
+  const nomLineas = doc.splitTextToSize(trab.nombre||'', 120);
+  doc.text(nomLineas, mx+30, y);
+  y+=Math.max(nomLineas.length,1)*4+1;
+
+  doc.setFont(undefined,'bold');
+  doc.text('RUT:', mx, y);
+  doc.setFont(undefined,'normal');
+  doc.text(trab.rut||'', mx+15, y);
+  doc.setFont(undefined,'bold');
+  doc.text('CARGO:', mx+80, y);
+  doc.setFont(undefined,'normal');
+  const cargoLineas = doc.splitTextToSize(trab.cargo||'', 90);
+  doc.text(cargoLineas, mx+100, y);
+  y+=Math.max(cargoLineas.length,1)*4+2;
+
+  doc.setFont(undefined,'bold');
+  doc.text('PERÍODO:', mx, y);
+  doc.setFont(undefined,'normal');
+  doc.text(monthLabel(mes), mx+28, y);
+  doc.setFont(undefined,'bold');
+  doc.text('FECHA EMISIÓN:', mx+75, y);
+  doc.setFont(undefined,'normal');
+  doc.text(new Date().toLocaleDateString('es-CL'), mx+103, y);
+  y+=8;
+
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(200,200,200);
+  doc.line(mx, y, pw-mx, y);
+  y+=7;
+
+  // ---------- Tabla de registros ----------
+  doc.setFontSize(7.5);
+
+  // Anchos de columna (mm)
+  const colFecha=22, colDia=11, colTipo=30, colEnt=17, colSal=17, colHor=16, colSep=6, colHE=22, colCos=35;
+  const xFecha=mx, xDia=xFecha+colFecha, xTipo=xDia+colDia, xEnt=xTipo+colTipo, xSal=xEnt+colEnt, xHor=xSal+colSal, xSep=xHor+colHor, xHE=xSep+colSep, xCos=xHE+colHE;
+  const xFin=xCos+colCos;
+
+  const diasSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  // El encabezado de tabla se dibuja SOLO una vez por dibujarCabeceraTabla()
+  const LIMITE_TABLA = ph - 33; // corte justo para que quepan 30 filas + firmas sin desbordar
+  const FILAS_MAX_PAGINA1 = 30;
+  let filasPagina1 = 0;
+
+  function dibujarCabeceraTabla(){
+    doc.setFillColor(168,139,250);
+    doc.rect(mx, y, usable, 7, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont(undefined,'bold');
+    doc.text('Fecha', xFecha+2, y+3.5);
+    doc.text('Día', xDia+2, y+3.5);
+    doc.text('Tipo de día', xTipo+2, y+3.5);
+    doc.text('Entrada', xEnt+2, y+3.5);
+    doc.text('Salida', xSal+2, y+3.5);
+    doc.text('Horas', xHor+2, y+3.5);
+    doc.text('Horas Extras', xHE+2, y+3.5);
+    doc.text('Costo $', xFin-2, y+3.5, {align:'right'});
+    y+=8;
+    doc.setTextColor(30,30,30);
+    doc.setFont(undefined,'normal');
+  }
+
+  dibujarCabeceraTabla();
+
+  recs.forEach((r, i)=>{
+    // Si se llena la página 1 (máx 30 turnos) o se acaba el espacio, pasar a página 2
+    if(filasPagina1>=FILAS_MAX_PAGINA1 || y>LIMITE_TABLA){
+      totalPagesReal++;
+      doc.addPage();
+      y=18;
+      // repetir encabezado empresa/trabajador resumido en continuación
+      doc.setFontSize(7.5); doc.setTextColor(90,90,90);
+      doc.text('(continuación) Liquidación de Remuneraciones - '+monthLabel(mes), pw/2, y, {align:'center'}); y+=6;
+      doc.setDrawColor(200,200,200); doc.line(mx, y, pw-mx, y); y+=6;
+      dibujarCabeceraTabla();
+      filasPagina1=0;
+    }
+
+    const c=calcDay(r);
+    const fecha=new Date(r.fechaTurno+'T12:00:00');
+    const dia=diasSem[fecha.getDay()];
+    const dd=String(fecha.getDate()).padStart(2,'0');
+    const mm=String(fecha.getMonth()+1).padStart(2,'0');
+    const yyyy=fecha.getFullYear();
+    const fechaDDMMYYYY=dd+'/'+mm+'/'+yyyy;
+
+    // Calcular horas extras para mostrar SIN paréntesis
+    const ent=toMinutes(r.horaEntrada);
+    const sal=toMinutes(r.horaSalida);
+    let heStr='';
+    if(ent && sal && r.tipoDia!=='EXTRA' && r.tipoDia!=='ESPECIAL'){
+      let s=sal; if(s<=ent) s+=24*60;
+      const totalMin=s-ent;
+      const inicioStr = defaultHE(r.fechaTurno, r.horaEntrada, r.inicioHorasExtras);
+      const inicio=toMinutes(inicioStr)||(17*60);
+      const extraMin=Math.max(0, s-Math.max(ent,inicio));
+      if(extraMin>0){
+        heStr=hrsHM(extraMin/60);
+      }
+    }
+
+    if(i%2===1){
+      doc.setFillColor(246,244,250);
+      doc.rect(mx, y-2, usable, 5.5, 'F');
+    }
+
+    const fechaLineas = doc.splitTextToSize(fechaDDMMYYYY, colFecha-4);
+    const diaLineas = doc.splitTextToSize(dia, colDia-4);
+    const tipoLineas = doc.splitTextToSize(r.tipoDia, colTipo-4);
+    const entLineas = doc.splitTextToSize(r.horaEntrada||'-', colEnt-4);
+    const salLineas = doc.splitTextToSize(r.horaSalida||'-', colSal-4);
+    const hrsLineas = doc.splitTextToSize(hrs(c.total), colHor-4);
+    const heLineas = doc.splitTextToSize(heStr, colHE-4);
+    const costoLineas = doc.splitTextToSize('$'+fmt(c.costo), colCos-4);
+
+    doc.text(fechaLineas, xFecha+2, y+3.2);
+    doc.text(diaLineas, xDia+2, y+3.2);
+    doc.text(tipoLineas, xTipo+2, y+3.2);
+    doc.text(entLineas, xEnt+2, y+3.2);
+    doc.text(salLineas, xSal+2, y+3.2);
+    doc.text(hrsLineas, xHor+2, y+3.2);
+    doc.text(heLineas, xHE+2, y+3.2);
+    doc.text(costoLineas, xFin-2, y+3.2, {align:'right'});
+
+    y+=5.5;
+    filasPagina1++;
+  });
+
+  y+=4;
+  drawSignatures(y+6);
+
+  // ============================================================
+  // PÁGINA 2: Resumen de liquidación
+  // ============================================================
+  doc.addPage();
+
+  doc.setFontSize(16);
+  doc.setTextColor(168,139,250);
+  doc.text('RESUMEN DE LIQUIDACIÓN', pw/2, 25, {align:'center'});
+  y=35;
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(30,30,30);
+  doc.setFont(undefined,'normal');
+  doc.text('Período: '+monthLabel(mes), mx, y);
+  y+=5;
+  doc.text('Trabajador: '+(trab.nombre||''), mx, y);
+  y+=5;
+  doc.text('RUT: '+(trab.rut||''), mx, y);
+  y+=7;
+
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(200,200,200);
+  doc.line(mx, y, pw-mx, y);
+  y+=6;
+
+  const resumenRows=[
+    // --- HABERES ---
+    ['Horas normales trabajadas', hrs(L.norm)],
+    ['Horas extras trabajadas', hrs(L.ext)],
+    ['Total horas trabajadas', hrs(L.norm+L.ext)],
+    // --- SEPARADOR ENTRE HORAS Y SUELDO ---
+    null,
+    ['Sueldo por horas trabajadas', '$'+fmt(L.sueldo)],
+    ...(bonisPDF && bonisPDF.length ? bonisPDF.map(b=>[escapeHtml(b.nombre),'$'+fmt(b.monto)]) : []),
+    bonisPDF && bonisPDF.length ? ['Total bonificaciones','$'+fmt(L.bonif)] : null,
+    [`Gratificación legal (${p.gratificacion||0}%)`,'$'+fmt(L.grat)],
+    ['Total imponible','$'+fmt(L.imponible)],
+    // --- SEPARADOR ENTRE HABERES Y DESCUENTOS ---
+    null,
+    // --- DESCUENTOS ---
+    [`AFP (${p.afp||0}%)`,'-$'+fmt(L.afp)],
+    [`Seguro cesantía (${p.cesantia!=null?p.cesantia:0.6}%)`,'-$'+fmt(L.cesantia)],
+    [`Salud (${p.salud||0}%)`,'-$'+fmt(L.salud)],
+    ['Total descuentos','-$'+fmt(L.afp+L.cesantia+L.salud)],
+    // --- TOTAL ---
+    ['LÍQUIDO A PAGAR','$'+fmt(L.liquido)],
+  ].filter(Boolean);
+
+  resumenRows.forEach((row)=>{
+    if(row===null){
+      // Línea separadora
+      doc.setLineWidth(0.6);
+      doc.setDrawColor(100,100,100);
+      doc.line(mx, y+1, pw-mx, y+1);
+      y+=5;
+      return;
+    }
+    const [label, valor]=row;
+    const esTotal=label==='LÍQUIDO A PAGAR';
+    const esDescuento=label.startsWith('AFP')||label.startsWith('Seguro')||label.startsWith('Salud')||label.startsWith('Total descuentos');
+    if(esTotal){
+      doc.setFont(undefined,'bold');
+      doc.setTextColor(6,95,70);
+      doc.setFillColor(232,245,233);
+      doc.rect(mx, y-2, usable, 8, 'F');
+    } else if(esDescuento){
+      doc.setFont(undefined,'bold');
+      doc.setTextColor(153,27,27);
+    } else {
+      doc.setFont(undefined,'normal');
+      doc.setTextColor(30,30,30);
+    }
+    doc.text(label, mx+2, y+4);
+    doc.text(valor, pw-mx-2, y+4, {align:'right'});
+    y+=7;
+    if(esTotal || esDescuento){
+      doc.setFont(undefined,'normal');
+      doc.setTextColor(30,30,30);
+    }
+  });
+
+  y+=12;
+
+  // Notas
+  doc.setFontSize(7.5);
+  doc.setTextColor(90,90,90);
+  doc.text('Notas:', mx, y);
+  y+=4.5;
+  const reglas=reglasDias();
+  const diasPorTipo=t=>DIAS_SEMANA.filter((_,d)=>reglas[d]===t).join(', ');
+  const notas=[
+    '• Cálculos basados en marcas reales de asistencia registradas en la app.',
+    `• Parámetros: Sueldo base $${fmt(p.sueldoBaseHora||0)}/hora, Valor HE $${fmt(p.valorHoraExtra||0)}/hora, Gratificación ${p.gratificacion||0}%, AFP ${p.afp||0}%, Salud ${p.salud||0}%, Cesantía ${p.cesantia!=null?p.cesantia:0.6}%.`,
+    `• Reglas de días definidas en la app — NORMAL: ${diasPorTipo('NORMAL')||'ninguno'} · EXTRA: ${diasPorTipo('EXTRA')||'ninguno'} · ESPECIAL: ${diasPorTipo('ESPECIAL')||'ninguno'}.`,
+    '• Días NORMAL pagan sueldo base, y horas extras desde el inicio de HE configurado en cada turno.',
+    '• Días EXTRA se pagan a valor hora extra.',
+    '• Días ESPECIAL se pagan a hora especial (sueldo base + recargo % del registro).',
+    db.feriados ? `• Feriados de Chile (fuente: ${db.feriados.fuente}, actualizados el ${new Date(db.feriados.actualizado).toLocaleDateString('es-CL')}): irrenunciables → ${reglaFeriadoIrr()}; renunciables/legales → ${reglaFeriadoNoIrr()}.` : null,
+    '• Este documento es una liquidación estimada basada en los registros del sistema.',
+    '• Solicito reajuste o reliquidación según las horas y montos detallados arriba.'
+  ];
+  for(const nota of notas){
+    doc.text(nota, mx, y);
+    y+=4;
+  }
+
+  y+=12;
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(150,150,150);
+  doc.line(mx, y, mx+55, y);
+  doc.line(pw-mx-55, y, pw-mx, y);
+  doc.setFontSize(9);
+  doc.setTextColor(60,60,60);
+  doc.text('Firma Trabajador', mx, y+5);
+  doc.text('Firma Empleador', pw-mx-55, y+5);
+
+  const nombreArchivo='Liquidacion_RRHH_'+mes+'.pdf';
+  const paginasTotales = doc.getNumberOfPages();
+  dibujarPieEnTodasLasPaginas();
+  try{
+    doc.save(nombreArchivo);
+  }catch(e){
+    if(st){st.textContent='No se pudo descargar el PDF (bloqueado por el navegador). Intente de nuevo.';st.style.color='#b91c1c';}
+    return;
+  }
+
+  if(st){
+    st.textContent='PDF generado: '+nombreArchivo+' ('+paginasTotales+' páginas)';
+    st.style.color='#065f46';
+    setTimeout(()=>{st.textContent='';}, 5000);
+  }
+}
+
+function renderMonthlySummary(){
+  const container=document.getElementById('monthlySummary');
+  if(!container) return;
+  const groups={};
+  Object.values(db.registros).forEach(r=>{
+    const k=monthKey(r.fechaTurno); if(!k) return;
+    (groups[k]=groups[k]||[]).push(r);
+  });
+  const keys=Object.keys(groups).sort().reverse();
+  if(keys.length===0){container.innerHTML='<div class="empty">Sin datos</div>';return;}
+  // agrupar por año
+  const byYear={};
+  keys.forEach(k=>{
+    const y=k.slice(0,4);
+    (byYear[y]=byYear[y]||[]).push(k);
+  });
+  const years=Object.keys(byYear).sort().reverse();
+  let html='';
+  years.forEach(y=>{
+    const yearRecs=byYear[y].flatMap(k=>groups[k]);
+    const bonifYear=byYear[y].reduce((s,k)=>{
+      const bonisK=getBonos(k);
+      const sumaK=bonisK.reduce((s2,b)=>s2+(b.monto||0),0);
+      return s+sumaK;
+    },0);
+    const Ly=calcLiquidacion(yearRecs, bonifYear);
+    html+=`<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:8px 10px;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:12px;color:#fff">
+        <span style="font-weight:800;font-size:15px">📅 Año ${y}</span>
+        <span style="font-size:12px;opacity:.9">${Ly.turnos} turnos · $${Math.round(Ly.liquido).toLocaleString('es-CL')} líquido</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr style="text-align:left;border-bottom:2px solid var(--border)"><th>Mes</th><th>Turnos</th><th>Normales</th><th>Extras</th><th>Bruto</th><th>Líquido</th></tr>`;
+    byYear[y].forEach(k=>{
+      const L=calcLiquidacion(groups[k], (db.bonificaciones&&db.bonificaciones[k])||0);
+      html+=`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 2px;font-weight:700">${monthLabel(k)}</td>
+        <td style="padding:6px 2px">${L.turnos}</td>
+        <td style="padding:6px 2px">${hrs(L.norm)}</td>
+        <td style="padding:6px 2px">${hrs(L.ext)}</td>
+        <td style="padding:6px 2px">$${Math.round(L.bruto).toLocaleString('es-CL')}</td>
+        <td style="padding:6px 2px;font-weight:700">$${Math.round(L.liquido).toLocaleString('es-CL')}</td>
+      </tr>`;
+    });
+    html+=`<tr style="font-weight:800;border-top:2px solid var(--border);background:#faf7fb">
+      <td style="padding:6px 2px">Subtotal ${y}</td>
+      <td style="padding:6px 2px">${Ly.turnos}</td>
+      <td style="padding:6px 2px">${hrs(Ly.norm)}</td>
+      <td style="padding:6px 2px">${hrs(Ly.ext)}</td>
+      <td style="padding:6px 2px">$${Math.round(Ly.bruto).toLocaleString('es-CL')}</td>
+      <td style="padding:6px 2px">$${Math.round(Ly.liquido).toLocaleString('es-CL')}</td>
+    </tr>`;
+    html+='</table></div>';
+  });
+  const bonifTotal=Object.values(db.bonificaciones||{}).reduce((s,n)=>s+(Number(n)||0),0);
+  const Ltot=calcLiquidacion(Object.values(db.registros), bonifTotal);
+  html+=`<div style="padding:10px;border-radius:12px;background:linear-gradient(90deg,var(--mint),#34d399);color:#fff;font-weight:800;display:flex;justify-content:space-between">
+    <span>TOTAL GENERAL</span>
+    <span>${Ltot.turnos} turnos · $${Math.round(Ltot.liquido).toLocaleString('es-CL')} líquido</span>
+  </div>`;
+  container.innerHTML=html;
+}
+function renderAll(){renderHistorial();renderMonthlySummary();renderLiquidacion();}
+
+function startHearts(){
+  const c=document.getElementById('bgHearts');
+  const emojis=['💖','💕','🌸','✨','💗'];
+  for(let i=0;i<14;i++){
+    const s=document.createElement('span');
+    s.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    s.style.left=Math.random()*100+'vw';
+    s.style.animationDuration=(12+Math.random()*18)+'s';
+    s.style.animationDelay=Math.random()*20+'s';
+    s.style.fontSize=(16+Math.random()*18)+'px';
+    c.appendChild(s);
+  }
+}
+</script>
+<script type="module">
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getDatabase, ref, set, update, get, remove, onValue } from 'firebase/database';
+import { getAnalytics } from 'firebase/analytics';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAMP_uo5XBF1PJldZ9vRm3OuhrIHDnZJdg",
+  authDomain: "registro-de-turnos-89abd.firebaseapp.com",
+  projectId: "registro-de-turnos-89abd",
+  storageBucket: "registro-de-turnos-89abd.firebasestorage.app",
+  messagingSenderId: "478352736834",
+  appId: "1:478352736834:web:5f1ae0699ac9d4ba8b23db",
+  measurementId: "G-BC9XM45TWT",
+  databaseURL: "https://registro-de-turnos-89abd-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const rtdb = getDatabase(app);
+const auth = getAuth(app);
+let analytics = null;
+try { analytics = getAnalytics(app); } catch (e) { /* analytics optional */ }
+
+window.FB = { app, db: rtdb, auth, analytics, ready: true };
+window.FB_AUTH_PROMISE = signInAnonymously(auth).then(u => { if (typeof window.updateFbStatus === 'function') window.updateFbStatus(); return u; }).catch(err => { window.FB_AUTH_ERROR = err; if (typeof window.updateFbStatus === 'function') window.updateFbStatus(); throw err; });
+if (typeof window.updateFbStatus === 'function') window.updateFbStatus();
+
+function flatToNested(registros){
+  const out={};
+  for(const [date,rec] of Object.entries(registros||{})){
+    const [y,m,d]=String(date).split('-');
+    if(!y||!m||!d) continue;
+    out[y]=out[y]||{}; out[y][m]=out[y][m]||{}; out[y][m][d]=rec;
+  }
+  return out;
+}
+function nestedToFlat(obj){
+  const out={};
+  if(!obj) return out;
+  for(const [y,v1] of Object.entries(obj)){
+    if(/^\d{4}$/.test(y)){
+      for(const [m,v2] of Object.entries(v1||{})){
+        if(!/^\d{2}$/.test(m)) continue;
+        for(const [d,rec] of Object.entries(v2||{})){
+          if(!/^\d{2}$/.test(d)) continue;
+          out[`${y}-${m}-${d}`]=rec;
+        }
+      }
+    } else if(/^\d{4}-\d{2}-\d{2}$/.test(y)){
+      out[y]=v1;
+    }
+  }
+  return out;
+}
+window.FB_HELPERS = {
+  async uploadAll(registros, parametros, bonificaciones, empresa, trabajador, feriados) {
+    try { await window.FB_AUTH_PROMISE; } catch(e){}
+    // SEGURIDAD: los registros se suben con update() (merge), nunca con set() global:
+    // así ninguna escritura puede vaciar el nodo por accidente.
+    const nested=flatToNested(registros||{});
+    if(Object.keys(nested).length>0) await update(ref(rtdb, 'registros'), nested);
+    await set(ref(rtdb, 'config/parametros'), parametros || {});
+    await set(ref(rtdb, 'config/bonificaciones'), bonificaciones || {});
+    await set(ref(rtdb, 'config/empresa'), empresa || {});
+    await set(ref(rtdb, 'config/trabajador'), trabajador || {});
+    await set(ref(rtdb, 'config/feriados'), feriados || {});
+  },
+  async downloadAll() {
+    try { await window.FB_AUTH_PROMISE; } catch(e){}
+    const snap = await get(ref(rtdb, 'registros'));
+    const registros = nestedToFlat(snap.exists() ? snap.val() : {});
+    const pSnap = await get(ref(rtdb, 'config/parametros'));
+    const parametros = pSnap.exists() ? pSnap.val() : null;
+    const bSnap = await get(ref(rtdb, 'config/bonificaciones'));
+    const bonificaciones = bSnap.exists() ? bSnap.val() : {};
+    const eSnap = await get(ref(rtdb, 'config/empresa'));
+    const empresa = eSnap.exists() ? eSnap.val() : {};
+    const tSnap = await get(ref(rtdb, 'config/trabajador'));
+    const trabajador = tSnap.exists() ? tSnap.val() : {};
+    const hSnap = await get(ref(rtdb, 'config/feriados'));
+    const feriados = hSnap.exists() ? hSnap.val() : null;
+    return { registros, parametros, bonificaciones, empresa, trabajador, feriados };
+  },
+  async deleteRecord(id) {
+    try { await window.FB_AUTH_PROMISE; } catch(e){}
+    const [y,m,d]=String(id).split('-');
+    if(y&&m&&d){ await remove(ref(rtdb, 'registros/'+y+'/'+m+'/'+d)); }
+    else { await remove(ref(rtdb, 'registros/' + id)); }
+  },
+  subscribe(onChange){
+    let regs={}, cfg=null, bonif={}, emp={}, trab={}, fer={};
+    const notify=()=>onChange({registros:regs, parametros:cfg, bonificaciones:bonif, empresa:emp, trabajador:trab, feriados:fer});
+    const off1=onValue(ref(rtdb,'registros'), snap=>{
+      regs=nestedToFlat(snap.exists()?snap.val():{});
+      notify();
+    });
+    const off2=onValue(ref(rtdb,'config/parametros'), snap=>{
+      cfg=snap.exists()?snap.val():null;
+      notify();
+    });
+    const off3=onValue(ref(rtdb,'config/bonificaciones'), snap=>{
+      bonif=snap.exists()?snap.val():{};
+      notify();
+    });
+    const off4=onValue(ref(rtdb,'config/empresa'), snap=>{
+      emp=snap.exists()?snap.val():{};
+      notify();
+    });
+    const off5=onValue(ref(rtdb,'config/trabajador'), snap=>{
+      trab=snap.exists()?snap.val():{};
+      notify();
+    });
+    const off6=onValue(ref(rtdb,'config/feriados'), snap=>{
+      fer=snap.exists()?snap.val():null;
+      notify();
+    });
+    return ()=>{ off1(); off2(); off3(); off4(); off5(); off6(); };
+  }
+};
+
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+</body>
+</html>
