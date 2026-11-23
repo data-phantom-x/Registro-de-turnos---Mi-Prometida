@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">Registro de Turnos</title>
+  <desc id="logoDesc">Calendario con un corazón y un reloj</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b9d" />
+      <stop offset="100%" stop-color="#a78bfa" />
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0" />
+    </linearGradient>
+    <linearGradient id="mintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#5b21b6" flood-opacity="0.22" />
+    </filter>
+  </defs>
+  <rect x="16" y="16" width="168" height="168" rx="44" fill="url(#bgGrad)" filter="url(#softShadow)" />
+  <rect x="16" y="16" width="168" height="84" rx="44" fill="url(#glassGrad)" />
+  <rect x="44" y="54" width="112" height="98" rx="22" fill="#ffffff" />
+  <path d="M44 76 C44 63.8 53.8 54 66 54 L134 54 C146.2 54 156 63.8 156 76 L156 82 L44 82 Z" fill="#fff0f6" />
+  <line x1="44" y1="82" x2="156" y2="82" stroke="#f1e4f3" stroke-width="2" />
+  <rect x="70" y="42" width="10" height="22" rx="5" fill="#ffffff" stroke="#a78bfa" stroke-width="3" />
+  <rect x="120" y="42" width="10" height="22" rx="5" fill="#ffffff" stroke="#ff6b9d" stroke-width="3" />
+  <path d="M100 135 C100 135 72 117 72 100 C72 91.5 78.8 85 87 85 C92.5 85 97.3 88 100 92.5 C102.7 88 107.5 85 113 85 C121.2 85 128 91.5 128 100 C128 117 100 135 100 135 Z" fill="url(#bgGrad)" />
+  <path d="M81 96 C81 92 84 90 87 90" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.8" />
+  <g transform="translate(136, 136)">
+    <circle cx="0" cy="0" r="24" fill="#ffffff" />
+    <circle cx="0" cy="0" r="20" fill="url(#mintGrad)" />
+    <polyline points="0,-10 0,0 7,4" fill="none" stroke="#065f46" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

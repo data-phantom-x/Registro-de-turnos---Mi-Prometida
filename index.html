@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Registro de Turnos 💕</title>
 <meta name="description" content="App tierna y práctica para registrar turnos. Datos locales, listos para Firebase.">
+<meta name="application-name" content="Registro de Turnos">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Turnos">
+<meta name="theme-color" content="#ff6b9d">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -52,8 +63,8 @@ header.hero h1{
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 header.hero p{margin:6px 0 0;color:var(--muted);font-size:15px}
-.hero-emoji{font-size:42px;display:block;margin-bottom:4px;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.hero-logo{display:block;width:84px;height:84px;margin:0 auto 4px}
+.install-btn{margin-top:14px}
 
 .tabs{
   display:flex;gap:8px;justify-content:center;margin:14px 0 18px;flex-wrap:wrap;
@@ -192,9 +203,10 @@ textarea{min-height:80px;resize:vertical}
 <div class="bg-hearts" id="bgHearts" aria-hidden="true"></div>
 <div class="wrap">
   <header class="hero">
-    <span class="hero-emoji">💖</span>
+    <img class="hero-logo" src="./logo.svg" alt="Logotipo de Registro de Turnos" width="84" height="84">
     <h1>Registro de Turnos</h1>
     <p>Registra turnos, horas extras y días especiales · todo en un solo lugar</p>
+    <button type="button" class="btn btn-soft btn-sm install-btn hidden" id="btnInstalar">📲 Instalar app</button>
   </header>
 
   <nav class="tabs">
@@ -1045,6 +1057,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('horaEntrada').value=nowTimeStr();
   document.getElementById('horaSalida').value='';
   prefillFromFecha();
+
+  // Acceso directo de la PWA: permite abrir el formulario con ?vista=registro.
+  const vistaInicial=new URLSearchParams(window.location.search).get('vista');
+  if(['resumen','registro','ajustes'].includes(vistaInicial)) switchTab(vistaInicial);
 
   // events
   document.querySelectorAll('input[name="tipoDia"]').forEach(el=>el.addEventListener('change',()=>{
@@ -2316,6 +2332,78 @@ window.FB_HELPERS = {
 };
 
 window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<script>
+// ---------- PWA: instalación y Service Worker ----------
+(() => {
+  const installBtn=document.getElementById('btnInstalar');
+  let installPrompt=null;
+  let reloading=false;
+
+  const isInstalled=() => (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone===true
+  );
+
+  const showInstallButton=() => {
+    if(installBtn && !isInstalled()) installBtn.classList.remove('hidden');
+  };
+
+  window.addEventListener('beforeinstallprompt',event => {
+    event.preventDefault();
+    installPrompt=event;
+    showInstallButton();
+  });
+
+  installBtn?.addEventListener('click',async() => {
+    if(installPrompt){
+      installPrompt.prompt();
+      const choice=await installPrompt.userChoice;
+      installPrompt=null;
+      if(choice?.outcome==='accepted') installBtn.classList.add('hidden');
+      return;
+    }
+
+    const isIOS=(/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1));
+    if(isIOS){
+      window.alert('Para instalar la app en iPhone o iPad:\n\n1. Abre esta página en Safari.\n2. Toca el botón Compartir.\n3. Selecciona “Agregar a pantalla de inicio”.');
+    }else{
+      toast('Abre el menú del navegador y selecciona “Instalar app” o “Agregar a pantalla de inicio”.');
+    }
+  });
+
+  window.addEventListener('appinstalled',() => {
+    installPrompt=null;
+    installBtn?.classList.add('hidden');
+  });
+
+  // En iPhone/iPad no existe beforeinstallprompt, por lo que mostramos una ayuda.
+  const isIOS=(/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1));
+  if(isIOS && !isInstalled()) setTimeout(showInstallButton,800);
+
+  if(!('serviceWorker' in navigator) || window.location.protocol==='file:') return;
+
+  const hadController=Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange',() => {
+    if(!hadController || reloading) return;
+    reloading=true;
+    window.location.reload();
+  });
+
+  const registerServiceWorker=async() => {
+    try {
+      const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+      setInterval(() => registration.update().catch(() => {}),60*60*1000);
+    } catch(error) {
+      console.warn('No se pudo registrar el Service Worker',error);
+    }
+  };
+
+  if(document.readyState==='complete') registerServiceWorker();
+  else window.addEventListener('load',registerServiceWorker,{once:true});
+})();
 </script>
 </body>
 </html>
